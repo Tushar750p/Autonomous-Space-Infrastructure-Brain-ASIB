@@ -30,6 +30,12 @@ class RiskPredictor:
             if node.power_pct <= 30:
                 score += min(35.0, (30.0 - node.power_pct) * 1.5)
                 reasons.append("power reserve low")
+
+            if world.environment.in_eclipse:
+                if node.power_pct <= 50:
+                    score += 8.0
+                    reasons.append("eclipse reducing available solar input")
+                confidence += 0.05
             if node.cpu_load >= 80:
                 score += 20.0
                 reasons.append("compute saturation")
