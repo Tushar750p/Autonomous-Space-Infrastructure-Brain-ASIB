@@ -36,6 +36,7 @@ Infrastructure Memory
 - 🌡️ Thermal modelling
 - ⚡ Power reserve modelling
 - 📡 Network topology + simulated communication delay
+- ☀️ Deterministic orbital sunlight/eclipse power environment
 - 🌍 Simulated intermittent Earth contact
 - 💥 Thermal, power, network-partition and compute fault injection
 - 🔄 Multi-node workload migration
@@ -49,6 +50,7 @@ Infrastructure Memory
 - ✅ Tamper-evident decision ledger (SHA-256 chain)
 - ✅ Simulation-only hardware-in-the-loop boundary
 - ✅ Reproducible passive-vs-ASIB experiment suite
+- ✅ Deterministic state replay including orbital environment
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
 - 🤖 Simulated maintenance-robot fleet
@@ -104,6 +106,7 @@ ASIB can:
 asib/
 ├── models.py       # world, nodes, actions, events
 ├── simulator.py    # deterministic digital twin + fault injection
+├── environment.py  # orbital sunlight/eclipse environment
 ├── policy.py       # safety boundaries
 ├── planner.py      # uncertainty-aware multi-node recovery planning
 ├── engine.py       # observe / execute / verify loop
@@ -114,6 +117,7 @@ asib/
 ├── comms.py        # delayed communication model
 ├── network.py      # node topology and partitions
 ├── telemetry.py    # telemetry history
+├── resources.py    # plan-local resource reservations
 ├── robotics.py     # safe maintenance-robot simulator
 ├── hil.py          # simulation-only hardware boundary
 ├── audit.py        # tamper-evident decision ledger
@@ -131,6 +135,8 @@ The long-term research problem is **cross-infrastructure autonomy**:
 > How can heterogeneous off-Earth systems cooperatively manage limited power, thermal headroom, compute, communications and maintenance resources under partial observability?
 
 ASIB V2 adds a concrete partial-observability mechanism: each infrastructure node has an observer-specific knowledge view. State updates travel through simulated links with delay, stale knowledge lowers confidence, and the planner penalizes uncertainty instead of blindly trusting old state.
+
+The simulator also includes an orbital sunlight/eclipse cycle. Solar input and thermal bias change with orbital phase, so recovery policies can be tested against a changing space-specific environment rather than static faults alone.
 
 See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
