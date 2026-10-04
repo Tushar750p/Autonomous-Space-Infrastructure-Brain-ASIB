@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from .action_executor import ActionExecutor
 from .mission import MissionEvaluator
+from .policy import SafetyPolicy
+from .resources import migration_power_floor
 from .models import Action, World
 from .simulator import Simulator
 from .validation import InvariantViolation, SafetyValidator
@@ -46,6 +48,7 @@ class CounterfactualEvaluator:
     ):
         self.executor = executor or ActionExecutor()
         self.validator = validator or SafetyValidator()
+        self.policy = SafetyPolicy()
         self.mission = MissionEvaluator()
 
     def evaluate(
@@ -75,7 +78,25 @@ class CounterfactualEvaluator:
             future_sim.world = shadow
             for _ in range(horizon_ticks):
                 future_sim.advance_physics()
-                if not self.validator.validate(shadow).safe:
+
+                operationally_safe = self.validator.validate(shadow).safe
+                if operationally_safe:
+                    for node in shadow.nodes.values():
+                        if node.temperature_c >= self.policy.THERMAL_CRITICAL:
+                            operationally_safe = False
+                            break
+                        if node.power_pct <= self.policy.POWER_CRITICAL:
+                            operationally_safe = False
+                            break
+                        if (
+                            node.network_ok
+                            and node.power_pct <= migration_power_floor(shadow)
+                            and node.workload > 0
+                        ):
+                            operationally_safe = False
+                            break
+
+                if not operationally_safe:
                     future_safe = False
                     future_failure_tick = shadow.tick
                     break
