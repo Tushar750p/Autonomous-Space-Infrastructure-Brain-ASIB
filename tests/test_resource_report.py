@@ -15,6 +15,8 @@ class TestResourceReport(unittest.TestCase):
         self.assertGreaterEqual(report["min_thermal_headroom_c"], 0)
         self.assertLessEqual(report["network_available_pct"], 100)
         self.assertIn("solar_generation_pct", report)
+        self.assertIn("min_storage_headroom_pct", report)
+        self.assertIn("storage_headroom_pct", report["nodes"][0])
 
 
 if __name__ == "__main__":
