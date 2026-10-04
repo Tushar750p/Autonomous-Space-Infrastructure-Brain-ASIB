@@ -77,13 +77,19 @@ class ForecastLedger:
     def summary(self) -> dict:
         completed = len(self.completed)
         predicted_high = sum(r.probability >= 0.7 for r in self.completed)
-        observed_high = sum(bool(r.outcome) for r in self.completed)
+        observed_failures = sum(bool(r.outcome) for r in self.completed)
+        observed_high = sum(
+            bool(r.outcome)
+            for r in self.completed
+            if r.probability >= 0.7
+        )
         return {
             "pending": len(self.pending),
             "completed": completed,
             "brier_score": self.brier_score(),
             "high_risk_forecasts": predicted_high,
             "high_risk_outcomes": observed_high,
+            "observed_failures": observed_failures,
             "forecast_skill_sample_size": completed,
         }
 
