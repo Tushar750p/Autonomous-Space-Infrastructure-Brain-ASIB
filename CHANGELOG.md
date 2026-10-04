@@ -8,6 +8,10 @@
 - Scalable deterministic multi-node simulation.
 - Optional SQLite operational event and decision persistence.
 - Robustness and scalability test coverage.
+- Constraint-based counterfactual plan optimization with bounded action search.
+- Complete JSON-safe simulation checkpoints with restore support.
+- Storage-aware prediction, resource envelopes and maintenance cleanup.
+- Configurable mission profiles propagated through brain, counterfactual validation and runtime surfaces.
 
 ### Operations
 - Docker Compose now persists the operational journal in a named volume.
