@@ -166,7 +166,7 @@ def run_experiment_suite(ticks: int = 20) -> dict:
         })
 
     return {
-        "suite_version": "1.0",
+        "suite_version": "1.1",
         "ticks": ticks,
         "deterministic": True,
         "scenarios": results,
