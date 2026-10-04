@@ -8,16 +8,18 @@
 
 ## Core loop
 
-\`\`\`
+```
 Telemetry
    ↓
 Digital Twin / World State
+   ↓
+Observer-specific Knowledge
    ↓
 Observe & Detect
    ↓
 Safety Policy
    ↓
-Multi-Node Planner
+Uncertainty-aware Multi-Node Planner
    ↓
 Execute
    ↓
@@ -25,7 +27,7 @@ Verify
    ↓
 Infrastructure Memory
    ↺
-\`\`\`
+```
 
 ## What is implemented
 
@@ -38,85 +40,89 @@ Infrastructure Memory
 - 💥 Thermal, power, network-partition and compute fault injection
 - 🔄 Multi-node workload migration
 - 🧠 Infrastructure event memory and querying
-- 🔮 Transparent risk prediction
+- 🔮 Transparent risk prediction with trend, confidence and horizon
+- 🧩 Observer-specific distributed knowledge with stale-state modelling
+- 🎯 Uncertainty-aware target selection for workload migration
 - 🛡️ Safety guardrails for autonomous actions
+- ✅ Execution-aware verification
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
 - 🤖 Simulated maintenance-robot fleet
-- 🔮 Trend-aware risk prediction with confidence/horizon
 - 🧾 Decision traces for every autonomous planning cycle
-- 📊 Reproducible compound benchmark
+- 📊 Reproducible compound benchmark with recovery, score-delta and unsafe-event metrics
 - 🧪 Unit + system tests + GitHub Actions CI
 - 🐳 Docker + Docker Compose support
 
 ## Run locally
 
-\`\`\`bash
+```bash
 python -m asib.cli
 python run_asib.py compound
 python run_benchmark.py --ticks 20
 python -m unittest discover -s tests -v
-\`\`\`
+```
 
 ### Control room
 
-\`\`\`bash
+```bash
 python -c "from asib.dashboard import run; run(host='0.0.0.0', port=8080)"
-\`\`\`
+```
 
-Open \`http://localhost:8080\`.
+Open `http://localhost:8080`.
 
 ### Docker
 
-\`\`\`bash
+```bash
 docker compose up --build
-\`\`\`
+```
 
-Open \`http://localhost:8080\`.
+Open `http://localhost:8080`.
 
 ## Example autonomous scenario
 
-Inject a thermal fault into \`orbital-node-01\`.
+Inject a thermal fault into `orbital-node-01`.
 
 ASIB can:
 1. detect the unsafe thermal condition
-2. identify reclaimable workload
-3. select a healthier node
-4. migrate workload within a policy limit
-5. preserve critical workload
-6. verify the resulting state
-7. store the decision trace
+2. evaluate reclaimable workload
+3. consult an observer-specific, potentially delayed view of candidate nodes
+4. avoid targets whose state confidence is too low
+5. select a healthy connected node using an uncertainty penalty
+6. migrate workload within a policy limit
+7. preserve critical workload
+8. verify the resulting state
+9. store the decision trace
 
 ## Architecture
 
-\`\`\`
+```
 asib/
 ├── models.py       # world, nodes, actions, events
 ├── simulator.py    # deterministic digital twin + fault injection
 ├── policy.py       # safety boundaries
-├── planner.py      # multi-node recovery planning
+├── planner.py      # uncertainty-aware multi-node recovery planning
 ├── engine.py       # observe / execute / verify loop
+├── distributed.py  # delayed observer-specific infrastructure knowledge
 ├── memory.py       # operational memory
-├── predictor.py    # transparent risk scoring
+├── predictor.py    # transparent trend-aware risk scoring
 ├── mission.py      # mission health metrics
 ├── comms.py        # delayed communication model
 ├── network.py      # node topology and partitions
 ├── telemetry.py    # telemetry history
-├── predictor.py    # trend-aware risk prediction
-├── mission.py      # mission health metrics
-├── memory.py       # operational memory
 ├── robotics.py     # safe maintenance-robot simulator
 ├── runtime.py      # closed-loop autonomous runtime
 ├── benchmark.py    # reproducible system benchmark
 ├── scenarios.py    # repeatable fault scenarios
 └── dashboard.py    # autonomous browser control room
-\`\`\`
+```
 
 ## Research direction
 
 The long-term research problem is **cross-infrastructure autonomy**:
 
 > How can heterogeneous off-Earth systems cooperatively manage limited power, thermal headroom, compute, communications and maintenance resources under partial observability?
+
+ASIB V2 adds a concrete partial-observability mechanism: each infrastructure node has an observer-specific knowledge view. State updates travel through simulated links with delay, stale knowledge lowers confidence, and the planner penalizes uncertainty instead of blindly trusting old state.
 
 See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
@@ -126,7 +132,7 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
 **V1.5 — Physics + Prediction:** richer thermal/power dynamics, telemetry trends, topology and maintenance-robot simulation ✅
 
-**V2 — Distributed autonomy:** communication partitions, asynchronous planning, uncertainty-aware coordination and benchmarked recovery
+**V2 — Distributed autonomy:** delayed observer-specific knowledge, communication-aware planning, uncertainty-aware coordination and benchmarked recovery ✅
 
 **V3 — Hardware-in-the-loop:** simulated interfaces for future physical testbeds, with strict separation from real mission control
 
