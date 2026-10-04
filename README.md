@@ -99,6 +99,8 @@ Replay export: `http://localhost:8080/api/replay`
 
 Incident postmortem: `http://localhost:8080/api/postmortem`
 
+Forecast calibration export: `http://localhost:8080/api/calibration`
+
 Environment variables: `ASIB_HOST`, `ASIB_PORT`, `ASIB_TICK_INTERVAL_S`.
 
 ## Example autonomous scenario
@@ -171,7 +173,7 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
 **V3 — Safe test interfaces:** simulation-only hardware-in-the-loop boundary and tamper-evident decision audit ✅
 
-**V4 — Validation harness:** reproducible passive-vs-ASIB experiments across fault scenarios, future-horizon counterfactual validation and forecast calibration ✅
+**V4 — Validation harness:** reproducible passive-vs-ASIB experiments across nine scenarios, future-horizon counterfactual validation and forecast calibration ✅
 
 **V5 — Environmental autonomy:** deterministic orbital eclipse/sunlight dynamics, plan-local resource reservations, environment-aware energy margins and maintenance failure recovery ✅
 
