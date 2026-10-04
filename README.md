@@ -4,7 +4,6 @@
 
 > **Mission:** coordinate compute, power, thermal headroom, communications and recovery across many autonomous infrastructure nodes while Earth contact is delayed or unavailable.
 
-⚠️ **Research/simulation only.** ASIB does not control real spacecraft, launch vehicles, satellites or robots.
 
 ## Core loop
 
