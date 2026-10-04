@@ -5,6 +5,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+from .checkpoint import export_world
 from .config import ASIBConfig
 from .experiments import run_experiment_suite
 from .health import HealthService
@@ -138,6 +139,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with self.lock:
                 return self.json_response(self.runtime.storage_status())
 
+        if parsed.path == "/api/checkpoint":
+            with self.lock:
+                return self.json_response(export_world(self.runtime.world))
+
         if parsed.path == "/api/robustness":
             query = parse_qs(parsed.query)
             ticks = int(query.get("ticks", ["5"])[0])
@@ -231,6 +236,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Experiment Validation</h3><pre id="experiments">Run the validation suite to compare ASIB against a passive baseline.</pre></div>
 <div class="card"><h3>Latest Incident Postmortem</h3><pre id="postmortem">Loading...</pre></div>
 <div class="card"><h3>Persistent Storage</h3><pre id="storage">Loading...</pre></div>
+<div class="card"><h3>World Checkpoint</h3><pre id="checkpoint">Loading...</pre></div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
 
 <script>
@@ -279,6 +285,8 @@ async function refresh(){
  document.getElementById('postmortem').textContent=JSON.stringify(pm,null,2);
  const storage=await (await fetch('/api/storage',{cache:'no-store'})).json();
  document.getElementById('storage').textContent=JSON.stringify(storage,null,2);
+ const checkpoint=await (await fetch('/api/checkpoint',{cache:'no-store'})).json();
+ document.getElementById('checkpoint').textContent=JSON.stringify({format_version:checkpoint.format_version,tick:checkpoint.tick,nodes:Object.keys(checkpoint.nodes).length,audit_entries:checkpoint.audit_ledger.length},null,2);
 }
 refresh(); setInterval(refresh,1500);
 </script>
