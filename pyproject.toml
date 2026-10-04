@@ -4,15 +4,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "asib"
-version = "0.4.0"
-description = "Autonomous Space Infrastructure Brain research testbed"
+version = "0.5.0"
+description = "Autonomous Space Infrastructure Brain research and simulation testbed"
+readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Tushar Patil" }]
+keywords = ["space", "autonomy", "digital-twin", "simulation", "resilience", "infrastructure"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
 
 [project.scripts]
 asib = "asib.cli:main"
 asib-benchmark = "asib.benchmark_cli:main"
 asib-experiments = "asib.experiments_cli:main"
 asib-selftest = "asib.selftest:main"
+
+[tool.setuptools.packages.find]
+include = ["asib*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
