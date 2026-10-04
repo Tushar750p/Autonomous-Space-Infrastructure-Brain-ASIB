@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "asib"
-version = "0.5.0"
+version = "0.5.1"
 description = "Autonomous Space Infrastructure Brain research and simulation testbed"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,6 +28,7 @@ asib = "asib.cli:main"
 asib-benchmark = "asib.benchmark_cli:main"
 asib-experiments = "asib.experiments_cli:main"
 asib-selftest = "asib.selftest:main"
+asib-scenario = "asib.scenario_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["asib*"]
