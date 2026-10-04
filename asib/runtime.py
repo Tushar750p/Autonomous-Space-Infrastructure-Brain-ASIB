@@ -55,7 +55,8 @@ class ASIBRuntime:
                 if node.status.value not in {"isolated"}:
                     self.robots.enqueue(risk.node_id, "inspect-and-service", priority=10)
 
-        robot_events = self.robots.dispatch()
+        robot_events = self.robots.requeue_failed_tasks()
+        robot_events += self.robots.dispatch()
         robot_events += self.robots.step()
 
         events = knowledge_events + brain_events + robot_events
