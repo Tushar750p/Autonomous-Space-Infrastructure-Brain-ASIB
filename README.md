@@ -1,63 +1,125 @@
-# Autonomous Space Infrastructure Brain (ASIB)
+# 🛰️ Autonomous Space Infrastructure Brain — ASIB
 
-ASIB is an Earth-based research testbed for a future autonomous operating layer for distributed off-Earth infrastructure.
+**ASIB** is an Earth-based research testbed for a future autonomous operating layer for distributed off-Earth infrastructure.
 
-**Research focus:** multi-node coordination under power, thermal, compute, network and communication constraints.
+> **Mission:** coordinate compute, power, thermal headroom, communications and recovery across many autonomous infrastructure nodes while Earth contact is delayed or unavailable.
 
-This project deliberately begins as a simulator. It does **not** issue commands to spacecraft, satellites, launch vehicles or other real-world systems.
+⚠️ **Research/simulation only.** ASIB does not control real spacecraft, launch vehicles, satellites or robots.
 
-## V1 architecture
+## Core loop
 
-```
+\`\`\`
 Telemetry
    ↓
-World State / Digital Twin
+Digital Twin / World State
    ↓
-Event Detection
+Observe & Detect
    ↓
-Constraint & Safety Policy
+Safety Policy
    ↓
-Multi-node Planner
+Multi-Node Planner
    ↓
-Action Executor
+Execute
    ↓
-Verification
+Verify
    ↓
 Infrastructure Memory
-```
+   ↺
+\`\`\`
 
-### What V1 can demonstrate
+## What is implemented
 
-- Multiple virtual orbital compute nodes
-- Compute, power, thermal, storage and network state
-- Communication delay / degraded connectivity
-- Fault injection
-- Workload migration between nodes
-- Non-critical workload shedding
-- Power conservation
-- Network isolation
-- Safety guardrails
-- Post-action verification
-- Event/decision memory
-- Deterministic tests
+- 🛰️ Three virtual orbital compute nodes
+- 💻 Compute/workload modelling
+- 🌡️ Thermal modelling
+- ⚡ Power reserve modelling
+- 📡 Network state + simulated communication delay
+- 💥 Thermal, power, network and compute fault injection
+- 🔄 Multi-node workload migration
+- 🧠 Infrastructure event memory and querying
+- 🔮 Transparent risk prediction
+- 🛡️ Safety guardrails for autonomous actions
+- 🎯 Mission-health evaluation
+- 🖥️ Browser control room with live telemetry
+- 🧪 Unit tests + GitHub Actions CI
+- 🐳 Docker + Docker Compose support
 
-## Run
+## Run locally
 
-```bash
+\`\`\`bash
 python -m asib.cli
+python run_asib.py compound
 python -m unittest discover -s tests -v
-```
+\`\`\`
 
-The prototype uses only the Python standard library.
+### Control room
+
+\`\`\`bash
+python -c "from asib.dashboard import run; run(host='0.0.0.0', port=8080)"
+\`\`\`
+
+Open \`http://localhost:8080\`.
+
+### Docker
+
+\`\`\`bash
+docker compose up --build
+\`\`\`
+
+Open \`http://localhost:8080\`.
+
+## Example autonomous scenario
+
+Inject a thermal fault into \`orbital-node-01\`.
+
+ASIB can:
+1. detect the unsafe thermal condition
+2. identify reclaimable workload
+3. select a healthier node
+4. migrate workload within a policy limit
+5. preserve critical workload
+6. verify the resulting state
+7. store the decision trace
+
+## Architecture
+
+\`\`\`
+asib/
+├── models.py       # world, nodes, actions, events
+├── simulator.py    # deterministic digital twin + fault injection
+├── policy.py       # safety boundaries
+├── planner.py      # multi-node recovery planning
+├── engine.py       # observe / execute / verify loop
+├── memory.py       # operational memory
+├── predictor.py    # transparent risk scoring
+├── mission.py      # mission health metrics
+├── comms.py        # delayed communication model
+├── scenarios.py    # repeatable fault scenarios
+└── dashboard.py    # local browser control room
+\`\`\`
+
+## Research direction
+
+The long-term research problem is **cross-infrastructure autonomy**:
+
+> How can heterogeneous off-Earth systems cooperatively manage limited power, thermal headroom, compute, communications and maintenance resources under partial observability?
+
+See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
 ## Roadmap
 
-1. V1: deterministic digital-twin simulator + autonomous recovery
-2. V1.5: workload scheduler, richer thermal/power dynamics, fault scenarios
-3. V2: communication topology, orbital motion abstractions and multi-agent coordination
-4. V3: hardware-in-the-loop testbed
-5. V4: research-grade verification, safety cases and flight-software integration study
+**V1 — Earth digital twin:** multi-node autonomy, faults, policies, memory and telemetry ✅
 
-## Current research boundary
+**V1.5 — Physics:** richer thermal/power dynamics, storage, workload classes and stochastic faults
 
-ASIB is an experimental software architecture. It is not flight-qualified and should not control real spacecraft without extensive independent validation, formal safety analysis, hardware-in-the-loop testing and appropriate mission authorization.
+**V2 — Distributed autonomy:** communication partitions, asynchronous planning, node-to-node coordination and uncertainty
+
+**V3 — Robotics testbed:** simulated maintenance robot and hardware-in-the-loop interfaces
+
+**V4 — Research validation:** formal safety properties, reproducible benchmarks and independent verification
+
+**V5 — Space integration study:** qualified interfaces and mission-specific integration research
+
+## Intellectual property
+
+This repository is experimental software, not a patent opinion. Before patent-sensitive disclosure, perform a dedicated prior-art/patent review and document novel claims independently.
