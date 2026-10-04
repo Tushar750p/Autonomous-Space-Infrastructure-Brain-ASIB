@@ -1,4 +1,5 @@
 from .models import Action, AutonomyMode, NodeStatus, World
+from .resources import migration_power_floor
 
 
 class SafetyPolicy:
@@ -48,7 +49,7 @@ class SafetyPolicy:
             # physically unsafe target is never accepted.
             if not source.network_ok or not target.network_ok:
                 return False
-            if target.temperature_c >= self.THERMAL_DEGRADED or target.power_pct <= self.POWER_LOW:
+            if target.temperature_c >= self.THERMAL_DEGRADED or target.power_pct <= migration_power_floor(world):
                 return False
             if target.free_cpu < action.amount:
                 return False
