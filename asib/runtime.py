@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .config import ASIBConfig
 
@@ -26,8 +26,8 @@ class RuntimeReport:
     knowledge: dict
     replay_frames: int
     environment: dict
-    resources: dict
-    forecast_calibration: dict
+    resources: dict = field(default_factory=dict)
+    forecast_calibration: dict = field(default_factory=dict)
 
 
 class ASIBRuntime:
