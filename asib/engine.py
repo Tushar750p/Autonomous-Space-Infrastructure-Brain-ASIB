@@ -99,10 +99,10 @@ class ASIBBrain:
                                  action.action_type, trace_id))
         return results
 
-    def step(self, world: World) -> list[Event]:
+    def step(self, world: World, knowledge=None) -> list[Event]:
         trace_id = f"T{world.tick + 1:05d}"
         observed = self.observe(world)
-        plan = self.planner.plan(world)
+        plan = self.planner.plan(world, knowledge=knowledge)
         execution_events = self.execute(world, plan.actions, trace_id)
         verified = self.verify(world, plan.actions, execution_events, trace_id)
 
