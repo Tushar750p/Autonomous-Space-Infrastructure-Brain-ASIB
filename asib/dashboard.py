@@ -48,6 +48,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "frames": len(rt.replay.frames),
                 "valid": rt.replay.validate(),
             },
+            "resources": __import__("asib.resources", fromlist=["system_resource_report"]).system_resource_report(world),
             "last_decision": world.decision_log[-1] if world.decision_log else None,
         }
 
@@ -162,6 +163,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Robot Fleet</h3><pre id="robots">Loading...</pre></div>
 <div class="card"><h3>Audit Ledger</h3><pre id="audit">Loading...</pre></div>
 <div class="card"><h3>Replay Journal</h3><pre id="replay">Loading...</pre></div>
+<div class="card"><h3>Resource Envelope</h3><pre id="resources">Loading...</pre></div>
 </div>
 <div class="card"><h3>Experiment Validation</h3><pre id="experiments">Run the validation suite to compare ASIB against a passive baseline.</pre></div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
@@ -200,6 +202,7 @@ async function refresh(){
  document.getElementById('robots').textContent=JSON.stringify(d.robots,null,2);
  document.getElementById('audit').textContent=JSON.stringify(d.audit,null,2);
  document.getElementById('replay').textContent=JSON.stringify(d.replay,null,2);
+ document.getElementById('resources').textContent=JSON.stringify(d.resources,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
 }
 refresh(); setInterval(refresh,1500);
