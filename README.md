@@ -71,6 +71,7 @@ python run_asib.py compound
 python run_benchmark.py --ticks 20
 python run_experiments.py --ticks 20
 python -m asib.selftest 5
+python -m asib.scenario_cli eclipse
 python -m unittest discover -s tests -v
 ```
 
@@ -82,7 +83,7 @@ python -c "from asib.dashboard import run; run(host='0.0.0.0', port=8080)"
 
 Open `http://localhost:8080`.
 
-The package also supports `python -m asib` as a direct CLI entry point.
+The package also supports `python -m asib` as a direct CLI entry point and `asib-scenario <name>` for deterministic research scenarios.
 
 ### Docker
 
