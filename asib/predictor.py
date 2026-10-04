@@ -10,10 +10,12 @@ class Risk:
     reasons: list[str]
     confidence: float = 0.50
     horizon_ticks: int = 0
+    score_low: float = 0.0
+    score_high: float = 0.0
 
 
 class RiskPredictor:
-    """Transparent risk predictor with simple trend analysis."""
+    """Transparent risk predictor with trend analysis and uncertainty bounds."""
 
     def predict(self, world: World) -> list[Risk]:
         risks: list[Risk] = []
@@ -36,6 +38,7 @@ class RiskPredictor:
                     score += 8.0
                     reasons.append("eclipse reducing available solar input")
                 confidence += 0.05
+
             if node.cpu_load >= 80:
                 score += 20.0
                 reasons.append("compute saturation")
@@ -58,20 +61,37 @@ class RiskPredictor:
                     score += min(20.0, temp_rate * 8.0)
                     reasons.append(f"temperature rising {temp_rate:.2f} C/tick")
                     confidence += 0.15
-                    horizon = max(horizon, int(max(1, (85 - node.temperature_c) / temp_rate)))
+                    horizon = max(
+                        horizon,
+                        int(max(1, (85 - node.temperature_c) / temp_rate)),
+                    )
 
                 if power_rate < -1.0 and node.power_pct > 15:
                     score += min(15.0, abs(power_rate) * 4.0)
                     reasons.append(f"power reserve falling {abs(power_rate):.2f}%/tick")
                     confidence += 0.10
-                    horizon = max(horizon, int(max(1, (node.power_pct - 15) / abs(power_rate))))
+                    horizon = max(
+                        horizon,
+                        int(max(1, (node.power_pct - 15) / abs(power_rate))),
+                    )
+
+            score = min(100.0, round(score, 2))
+            confidence = min(0.95, round(confidence, 2))
+
+            # Confidence becomes a bounded score interval instead of a decorative
+            # scalar. Higher uncertainty widens the interval.
+            uncertainty = max(2.0, round((1.0 - confidence) * 28.0, 2))
+            score_low = max(0.0, round(score - uncertainty, 2))
+            score_high = min(100.0, round(score + uncertainty, 2))
 
             risks.append(Risk(
                 node.node_id,
-                min(100.0, round(score, 2)),
+                score,
                 reasons,
-                min(0.95, round(confidence, 2)),
+                confidence,
                 horizon,
+                score_low,
+                score_high,
             ))
 
-        return sorted(risks, key=lambda r: r.score, reverse=True)
+        return sorted(risks, key=lambda r: (r.score_high, r.score), reverse=True)
