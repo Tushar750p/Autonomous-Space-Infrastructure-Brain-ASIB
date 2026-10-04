@@ -24,6 +24,14 @@ class ASIBBrain:
             elif node.status != NodeStatus.ISOLATED:
                 node.status = NodeStatus.NOMINAL
         world.autonomy_mode = self.policy.mode_for(world)
+        if not world.earth_contact_available:
+            events.append(Event(
+                world.tick,
+                "earth_contact",
+                "earth",
+                "Earth contact unavailable; continuing local autonomy",
+                "warning",
+            ))
         return events
 
     def execute(self, world: World, actions: list[Action], trace_id: str) -> list[Event]:
