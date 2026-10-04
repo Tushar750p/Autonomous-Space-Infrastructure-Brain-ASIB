@@ -129,6 +129,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with self.lock:
                 return self.json_response(PostmortemService(self.runtime).generate().as_dict())
 
+        if parsed.path == "/api/calibration":
+            with self.lock:
+                return self.json_response(self.runtime.forecasts.export())
+
         if parsed.path == "/api/tick":
             with self.lock:
                 report = self.runtime.tick()
