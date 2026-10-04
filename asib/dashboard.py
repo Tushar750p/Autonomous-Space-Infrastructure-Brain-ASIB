@@ -5,135 +5,93 @@ from urllib.parse import parse_qs, urlparse
 from .engine import ASIBBrain
 from .mission import MissionEvaluator
 from .predictor import RiskPredictor
+from .scenarios import run_fault_scenario
 from .simulator import Simulator
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
     simulator = Simulator()
     brain = ASIBBrain()
-    predictor = RiskPredictor()
-    evaluator = MissionEvaluator()
 
-    def _json(self, payload):
+    def json_response(self, payload, status=200):
         body = json.dumps(payload, indent=2).encode()
-        self.send_response(200)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 
-    def _state(self):
-        world = self.simulator.world
-        return {
-            "tick": world.tick,
-            "autonomy_mode": world.autonomy_mode.value,
-            "comms_delay_s": world.comms_delay_s,
-            "nodes": self.simulator.snapshot(),
-            "risks": [r.__dict__ for r in self.predictor.predict(world)],
-            "mission": self.evaluator.evaluate(world),
-            "memory_entries": len(world.memory),
-        }
-
     def do_GET(self):
         parsed = urlparse(self.path)
 
         if parsed.path == "/api/state":
-            self._json(self._state())
-            return
+            world = self.simulator.world
+            payload = {
+                "tick": world.tick,
+                "autonomy_mode": world.autonomy_mode.value,
+                "comms_delay_s": world.comms_delay_s,
+                "nodes": self.simulator.snapshot(),
+                "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
+                "mission": MissionEvaluator().evaluate(world),
+                "memory_entries": len(world.memory),
+            }
+            return self.json_response(payload)
 
-        if parsed.path == "/api/step":
-            self.simulator.advance_physics()
-            events = self.brain.step(self.simulator.world)
-            self._json({"events": [e.__dict__ for e in events], "state": self._state()})
-            return
-
-        if parsed.path == "/api/fault":
-            scenario = parse_qs(parsed.query).get("type", ["thermal"])[0]
-            node_id = parse_qs(parsed.query).get("node", ["orbital-node-01"])[0]
-
-            if scenario == "thermal":
-                self.simulator.inject_thermal_failure(node_id)
-            elif scenario == "power":
-                self.simulator.inject_power_failure(node_id, 12.0)
-            elif scenario == "network":
-                self.simulator.inject_network_failure(node_id)
-            elif scenario == "compute":
-                self.simulator.inject_compute_overload(node_id, 45.0)
-            else:
-                self.send_error(400, "Unknown fault type")
-                return
-
-            self._json({"injected": scenario, "node": node_id, "state": self._state()})
-            return
+        if parsed.path == "/api/scenario":
+            name = parse_qs(parsed.query).get("name", ["compound"])[0]
+            if name not in {"thermal", "power", "network", "compound"}:
+                return self.json_response({"error": "unknown scenario"}, 400)
+            result = run_fault_scenario(name)
+            return self.json_response(result)
 
         html = """<!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
+<head><meta charset="utf-8"><title>ASIB Control Room</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASIB Autonomous Control Room</title>
 <style>
-body{font-family:system-ui;margin:0;background:#070b14;color:#edf2ff}
+body{font-family:system-ui;margin:0;background:#080d18;color:#eaf0ff}
 main{max-width:1200px;margin:auto;padding:28px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.card{padding:18px;background:#0f1625;border:1px solid #26324a;border-radius:16px}
-button{padding:10px 14px;margin:4px;border:0;border-radius:10px;cursor:pointer}
-.meter{font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:#10192b;border:1px solid #263653;border-radius:14px;padding:18px}
+button{padding:10px 14px;margin:4px;border:0;border-radius:8px;cursor:pointer}
+.badge{font-weight:700}
 pre{white-space:pre-wrap;overflow:auto}
+h1{margin-bottom:4px}
 small{opacity:.7}
-</style>
-</head>
-<body>
-<main>
-<h1>ASIB Autonomous Control Room</h1>
-<p><small>Earth-based digital-twin research testbed. No real spacecraft commands.</small></p>
-<div id="top" class="grid"></div>
+</style></head>
+<body><main>
+<h1>ASIB Control Room</h1>
+<small>Autonomous Space Infrastructure Brain · Earth-based research testbed</small>
 <div class="card">
-<h2>Fault Injection</h2>
-<button onclick="fault('thermal')">Thermal fault</button>
-<button onclick="fault('power')">Power fault</button>
-<button onclick="fault('network')">Network fault</button>
-<button onclick="fault('compute')">Compute overload</button>
-<button onclick="step()">Advance + Autonomous Step</button>
+<b>Fault injection</b><br>
+<button onclick="scenario('thermal')">Thermal</button>
+<button onclick="scenario('power')">Power</button>
+<button onclick="scenario('network')">Network</button>
+<button onclick="scenario('compound')">Compound</button>
 </div>
-<div id="nodes" class="grid"></div>
-<div class="card"><h2>Decision / Memory Trace</h2><pre id="trace">Loading...</pre></div>
-</main>
+<div id="summary" class="grid"></div>
+<div class="card"><h3>Node State</h3><pre id="nodes">Loading...</pre></div>
+<div class="card"><h3>Risk Prediction</h3><pre id="risks">Loading...</pre></div>
+<div class="card"><h3>Mission Health</h3><pre id="mission">Loading...</pre></div>
 <script>
-async function getState(){
-  const r=await fetch('/api/state'); return r.json();
-}
-function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
 async function refresh(){
-  const d=await getState();
-  document.getElementById('top').innerHTML =
-    '<div class="card"><h3>Autonomy</h3><div class="meter">'+esc(d.autonomy_mode)+'</div><small>Tick '+d.tick+'</small></div>'+
-    '<div class="card"><h3>Mission Score</h3><div class="meter">'+d.mission.score+' / 100</div><small>Availability '+d.mission.availability_pct+'%</small></div>'+
-    '<div class="card"><h3>Highest Risk</h3><div class="meter">'+(d.risks[0]?esc(d.risks[0].node_id)+' — '+d.risks[0].score:'none')+'</div><small>'+esc(d.risks[0]?.reasons?.join(', ')||'No active risk')+'</small></div>'+
-    '<div class="card"><h3>Memory</h3><div class="meter">'+d.memory_entries+' events</div><small>Comms delay '+d.comms_delay_s+' s</small></div>';
-  document.getElementById('nodes').innerHTML = Object.entries(d.nodes).map(([id,n]) =>
-    '<div class="card"><h3>'+esc(id)+'</h3>'+
-    '<div>CPU: '+n.cpu_load.toFixed(1)+'%</div>'+
-    '<div>Temp: '+n.temperature_c.toFixed(1)+' °C</div>'+
-    '<div>Power: '+n.power_pct.toFixed(1)+'%</div>'+
-    '<div>Workload: '+n.workload.toFixed(1)+'</div>'+
-    '<div>Network: '+(n.network_ok?'OK':'DOWN')+'</div>'+
-    '<div>Status: <b>'+esc(n.status)+'</b></div></div>').join('');
+ const d=await (await fetch('/api/state')).json();
+ document.getElementById('summary').innerHTML =
+   '<div class="card"><b>Mode</b><br><span class="badge">'+d.autonomy_mode+'</span></div>'+
+   '<div class="card"><b>Tick</b><br>'+d.tick+'</div>'+
+   '<div class="card"><b>Memory</b><br>'+d.memory_entries+' events</div>'+
+   '<div class="card"><b>Mission Score</b><br>'+d.mission.score+'/100</div>';
+ document.getElementById('nodes').textContent=JSON.stringify(d.nodes,null,2);
+ document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
+ document.getElementById('mission').textContent=JSON.stringify(d.mission,null,2);
 }
-async function step(){
-  const r=await fetch('/api/step'); const d=await r.json();
-  document.getElementById('trace').textContent = JSON.stringify(d.events,null,2);
-  refresh();
-}
-async function fault(type){
-  const r=await fetch('/api/fault?type='+encodeURIComponent(type)); const d=await r.json();
-  document.getElementById('trace').textContent = JSON.stringify(d,null,2);
-  refresh();
+async function scenario(name){
+ await fetch('/api/scenario?name='+encodeURIComponent(name));
+ await refresh();
 }
 refresh(); setInterval(refresh,1500);
 </script>
-</body>
-</html>"""
+</main></body></html>"""
         body = html.encode()
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
