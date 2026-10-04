@@ -80,6 +80,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif name == "eclipse":
             sim.world.environment.phase_deg = 120.0
             sim.world.nodes["orbital-node-02"].power_pct = 40.0
+        elif name == "eclipse-compound":
+            sim.world.environment.phase_deg = 120.0
+            sim.inject_thermal_failure("orbital-node-01", 96)
+            sim.inject_power_failure("orbital-node-02", 40)
+            sim.world.nodes["orbital-node-03"].critical_workload = 0
+            sim.inject_network_failure("orbital-node-03")
+            sim.inject_network_partition("orbital-node-02")
+            sim.inject_comms_delay(12.0)
+            sim.inject_earth_contact_loss()
         elif name == "robot-failure":
             runtime.robots.enqueue("orbital-node-01", "inspect-and-service", priority=100)
             runtime.robots.dispatch()
@@ -217,6 +226,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <button onclick="scenario('compound')">Compound</button>
 <button onclick="scenario('earth-loss')">Earth Contact Loss</button>
 <button onclick="scenario('eclipse')">Eclipse</button>
+<button onclick="scenario('eclipse-compound')">Eclipse + Compound</button>
 <button onclick="scenario('robot-failure')">Robot Failure</button>
 </div>
 
