@@ -40,6 +40,7 @@ class RobotFleet:
             "maintenance-02": Robot("maintenance-02", "service-bay"),
         }
         self.queue: list[RobotTask] = []
+        self.active_tasks: dict[str, RobotTask] = {}
 
     def enqueue(self, node_id: str, task: str = "inspect", priority: int = 1):
         if node_id not in self.world.nodes:
@@ -66,6 +67,7 @@ class RobotFleet:
             robot.target_node = task.node_id
             robot.task_ticks = 1
             self.queue.remove(task)
+            self.active_tasks[robot.robot_id] = task
             events.append(Event(
                 self.world.tick, "robot_dispatch", task.node_id,
                 f"{robot.robot_id} dispatched for {task.task}", "info"
@@ -111,6 +113,7 @@ class RobotFleet:
                     ))
                     robot.status = RobotStatus.IDLE
                     robot.target_node = None
+                    self.active_tasks.pop(robot.robot_id, None)
 
             if robot.battery_pct <= 15 and robot.status == RobotStatus.IDLE:
                 robot.status = RobotStatus.SAFE
@@ -119,6 +122,60 @@ class RobotFleet:
                     "Robot entered safe state due to low battery", "warning"
                 ))
         return events
+
+    def inject_failure(self, robot_id: str) -> Event:
+        robot = self.robots[robot_id]
+        robot.status = RobotStatus.FAILED
+        return Event(
+            self.world.tick,
+            "robot_failure",
+            robot_id,
+            f"{robot_id} failed during simulated maintenance operation",
+            "critical",
+        )
+
+    def requeue_failed_tasks(self) -> list[Event]:
+        events: list[Event] = []
+        for robot_id, task in list(self.active_tasks.items()):
+            robot = self.robots[robot_id]
+            if robot.status != RobotStatus.FAILED:
+                continue
+
+            spare = next(
+                (candidate for candidate in self.robots.values()
+                 if candidate.robot_id != robot_id and candidate.status == RobotStatus.IDLE),
+                None,
+            )
+            if spare is None:
+                continue
+
+            spare_task = RobotTask(spare.robot_id, task.node_id, task.task, task.priority)
+            if not any(item.node_id == task.node_id for item in self.queue):
+                self.queue.append(spare_task)
+            self.active_tasks.pop(robot_id, None)
+            events.append(Event(
+                self.world.tick,
+                "robot_reassignment",
+                task.node_id,
+                f"{task.node_id} maintenance task reassigned from {robot_id} to {spare.robot_id}",
+                "warning",
+            ))
+        return events
+
+    def recover_failed(self, robot_id: str) -> Event:
+        robot = self.robots[robot_id]
+        robot.status = RobotStatus.IDLE
+        robot.battery_pct = max(40.0, robot.battery_pct)
+        robot.target_node = None
+        robot.task_ticks = 0
+        self.active_tasks.pop(robot_id, None)
+        return Event(
+            self.world.tick,
+            "robot_recovered",
+            robot_id,
+            f"{robot_id} returned to simulated operational state",
+            "info",
+        )
 
     def recharge(self, robot_id: str | None = None):
         robots = self.robots.values() if robot_id is None else [self.robots[robot_id]]
