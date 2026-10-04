@@ -105,6 +105,9 @@ class RobotFleet:
                         if not target.network_ok:
                             target.network_ok = True
                             repairs.append("network")
+                        if target.storage_pct >= 85.0:
+                            target.storage_pct = max(50.0, target.storage_pct - 20.0)
+                            repairs.append("storage cleanup")
                         if not repairs:
                             repairs.append("inspection")
                     events.append(Event(
