@@ -4,7 +4,9 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+from .config import ASIBConfig
 from .experiments import run_experiment_suite
+from .health import HealthService
 from .mission import MissionEvaluator
 from .predictor import RiskPredictor
 from .runtime import ASIBRuntime
@@ -50,6 +52,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             },
             "resources": __import__("asib.resources", fromlist=["system_resource_report"]).system_resource_report(world),
             "last_decision": world.decision_log[-1] if world.decision_log else None,
+            "health": HealthService(rt).snapshot(),
         }
 
     @classmethod
@@ -90,6 +93,31 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/state":
             with self.lock:
                 return self.json_response(self.state())
+
+        if parsed.path == "/api/health":
+            with self.lock:
+                return self.json_response(HealthService(self.runtime).snapshot())
+
+        if parsed.path == "/api/audit":
+            with self.lock:
+                return self.json_response(self.runtime.world.audit_ledger.export())
+
+        if parsed.path == "/api/replay":
+            with self.lock:
+                return self.json_response(self.runtime.replay.export())
+
+        if parsed.path == "/api/metrics":
+            with self.lock:
+                state = self.state()
+                return self.json_response({
+                    "tick": state["tick"],
+                    "mission": state["mission"],
+                    "knowledge": state["knowledge"],
+                    "resources": state["resources"],
+                    "risks": state["risks"],
+                    "audit_valid": state["audit"]["valid"],
+                    "replay_valid": state["replay"]["valid"],
+                })
 
         if parsed.path == "/api/tick":
             with self.lock:
@@ -233,7 +261,12 @@ def _autonomous_loop(interval_s: float):
             pass
 
 
-def run(host="127.0.0.1", port=8080, interval_s=1.0):
+def run(host=None, port=None, interval_s=None):
+    config = ASIBConfig.from_env()
+    host = config.host if host is None else host
+    port = config.port if port is None else port
+    interval_s = config.tick_interval_s if interval_s is None else interval_s
+
     thread = threading.Thread(target=_autonomous_loop, args=(interval_s,), daemon=True)
     thread.start()
     print(f"ASIB dashboard: http://{host}:{port}")
