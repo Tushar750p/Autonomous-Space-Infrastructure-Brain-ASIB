@@ -13,6 +13,7 @@ The local control room exposes JSON endpoints for simulation inspection. These e
 | `/api/replay` | Export the tamper-evident deterministic replay journal |
 | `/api/calibration` | Export pending/completed forecast calibration records |
 | `/api/postmortem` | Generate the latest incident postmortem summary |
+| `/api/storage` | Show optional SQLite persistence status and record counts |
 | `/api/scenario?name=<name>` | Inject a research scenario and advance one tick |
 | `/api/experiments?ticks=<n>` | Run the reproducible passive-vs-ASIB validation suite |
 
