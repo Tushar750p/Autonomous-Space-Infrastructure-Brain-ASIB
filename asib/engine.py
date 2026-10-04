@@ -1,5 +1,6 @@
 from .action_executor import ActionExecutor
 from .counterfactual import CounterfactualEvaluator
+from .mission import MissionEvaluator, MissionProfile
 from .models import Action, AutonomyMode, Event, NodeStatus, World
 from .optimizer import ConstrainedPlanOptimizer
 from .planner import MultiNodePlanner
@@ -10,12 +11,13 @@ from .validation import SafetyValidator
 class ASIBBrain:
     """Autonomous controller for the ASIB Earth-based digital twin."""
 
-    def __init__(self):
+    def __init__(self, mission_profile: MissionProfile | None = None):
         self.policy = SafetyPolicy()
+        self.mission = MissionEvaluator(mission_profile)
         self.planner = MultiNodePlanner(self.policy)
         self.validator = SafetyValidator()
         self.executor = ActionExecutor(self.policy, self.validator)
-        self.counterfactual = CounterfactualEvaluator(self.executor)
+        self.counterfactual = CounterfactualEvaluator(self.executor, self.validator, self.mission)
         self.optimizer = ConstrainedPlanOptimizer(self.counterfactual)
 
     def observe(self, world: World) -> list[Event]:
