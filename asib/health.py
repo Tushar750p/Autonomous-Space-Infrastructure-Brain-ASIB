@@ -32,5 +32,6 @@ class HealthService:
             "audit_chain": audit_valid,
             "replay_journal": replay_valid,
             "forecast_calibration": self.runtime.forecasts.summary(),
+            "storage": self.runtime.storage_status(),
             "memory_entries": len(world.memory),
         }
