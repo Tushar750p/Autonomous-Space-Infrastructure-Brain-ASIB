@@ -45,6 +45,7 @@ Infrastructure Memory
 - 🎯 Uncertainty-aware target selection for workload migration
 - 🛡️ Safety guardrails for autonomous actions
 - ✅ Execution-aware verification
+- ✅ Explicit post-action safety invariants
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
 - 🤖 Simulated maintenance-robot fleet
@@ -132,7 +133,7 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
 **V1.5 — Physics + Prediction:** richer thermal/power dynamics, telemetry trends, topology and maintenance-robot simulation ✅
 
-**V2 — Distributed autonomy:** delayed observer-specific knowledge, communication-aware planning, uncertainty-aware coordination and benchmarked recovery ✅
+**V2 — Distributed autonomy:** delayed observer-specific knowledge, communication-aware planning, uncertainty-aware coordination, execution-time revalidation and explicit safety invariants ✅
 
 **V3 — Hardware-in-the-loop:** simulated interfaces for future physical testbeds, with strict separation from real mission control
 
