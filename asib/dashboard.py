@@ -5,7 +5,6 @@ from urllib.parse import parse_qs, urlparse
 from .engine import ASIBBrain
 from .mission import MissionEvaluator
 from .predictor import RiskPredictor
-from .scenarios import run_fault_scenario
 from .simulator import Simulator
 
 
@@ -41,8 +40,26 @@ class DashboardHandler(BaseHTTPRequestHandler):
             name = parse_qs(parsed.query).get("name", ["compound"])[0]
             if name not in {"thermal", "power", "network", "compound"}:
                 return self.json_response({"error": "unknown scenario"}, 400)
-            result = run_fault_scenario(name)
-            return self.json_response(result)
+            if name == "thermal":
+                self.simulator.inject_thermal_failure("orbital-node-01", 96)
+            elif name == "power":
+                self.simulator.inject_power_failure("orbital-node-01", 12)
+            elif name == "network":
+                self.simulator.world.nodes["orbital-node-03"].critical_workload = 0
+                self.simulator.inject_network_failure("orbital-node-03")
+            elif name == "compound":
+                self.simulator.inject_thermal_failure("orbital-node-01", 96)
+                self.simulator.inject_power_failure("orbital-node-02", 20)
+                self.simulator.world.nodes["orbital-node-03"].critical_workload = 0
+                self.simulator.inject_network_failure("orbital-node-03")
+                self.simulator.inject_comms_delay(12.0)
+
+            events = self.brain.step(self.simulator.world)
+            return self.json_response({
+                "scenario": name,
+                "events": [event.__dict__ for event in events],
+                "state": self.simulator.snapshot(),
+            })
 
         html = """<!doctype html>
 <html>
