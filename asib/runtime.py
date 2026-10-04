@@ -20,6 +20,7 @@ class RuntimeReport:
     memory_entries: int
     knowledge: dict
     replay_frames: int
+    environment: dict
 
 
 class ASIBRuntime:
@@ -73,6 +74,7 @@ class ASIBRuntime:
             memory_entries=len(self.world.memory),
             knowledge=self.knowledge.summary(self.world),
             replay_frames=len(self.replay.frames),
+            environment=self.world.environment.snapshot(),
         )
 
     def queue_message(self, source: str, destination: str, payload: str):
