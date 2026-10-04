@@ -1,4 +1,5 @@
 import json
+import logging
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -11,6 +12,7 @@ from .mission import MissionEvaluator
 from .postmortem import PostmortemService
 from .predictor import RiskPredictor
 from .runtime import ASIBRuntime
+from .resources import system_resource_report
 from .simulator import Simulator
 
 
@@ -51,7 +53,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "frames": len(rt.replay.frames),
                 "valid": rt.replay.validate(),
             },
-            "resources": __import__("asib.resources", fromlist=["system_resource_report"]).system_resource_report(world),
+            "resources": system_resource_report(world),
             "last_decision": world.decision_log[-1] if world.decision_log else None,
             "health": HealthService(rt).snapshot(),
         }
@@ -73,6 +75,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             sim.inject_compute_overload("orbital-node-01", 45)
         elif name == "earth-loss":
             sim.inject_earth_contact_loss()
+        elif name == "eclipse":
+            sim.world.environment.phase_deg = 120.0
+            sim.world.nodes["orbital-node-02"].power_pct = 40.0
         elif name == "robot-failure":
             runtime.robots.enqueue("orbital-node-01", "inspect-and-service", priority=100)
             runtime.robots.dispatch()
@@ -189,6 +194,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <button onclick="scenario('partition')">Network Partition</button>
 <button onclick="scenario('compound')">Compound</button>
 <button onclick="scenario('earth-loss')">Earth Contact Loss</button>
+<button onclick="scenario('eclipse')">Eclipse</button>
 <button onclick="scenario('robot-failure')">Robot Failure</button>
 </div>
 
@@ -261,6 +267,9 @@ refresh(); setInterval(refresh,1500);
         self.wfile.write(body)
 
 
+logger = logging.getLogger("asib.dashboard")
+
+
 def _autonomous_loop(interval_s: float):
     while True:
         time.sleep(interval_s)
@@ -268,8 +277,8 @@ def _autonomous_loop(interval_s: float):
             with DashboardHandler.lock:
                 DashboardHandler.runtime.tick()
         except Exception:
-            # The dashboard must remain available if a simulation step fails.
-            pass
+            # Keep the control room available, but retain diagnostics server-side.
+            logger.exception("ASIB autonomous dashboard tick failed")
 
 
 def run(host=None, port=None, interval_s=None):
