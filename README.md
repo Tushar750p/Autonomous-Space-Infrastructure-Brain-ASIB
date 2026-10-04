@@ -2,6 +2,8 @@
 
 **ASIB** is an Earth-based research testbed for a future autonomous operating layer for distributed off-Earth infrastructure.
 
+> **Research/simulation only:** this repository is not flight software and is not intended to command real spacecraft or physical hardware.
+
 > **Mission:** coordinate compute, power, thermal headroom, communications and recovery across many autonomous infrastructure nodes while Earth contact is delayed or unavailable.
 
 
@@ -30,7 +32,7 @@ Infrastructure Memory
 
 ## What is implemented
 
-- 🛰️ Three virtual orbital compute nodes
+- 🛰️ Scalable deterministic virtual orbital compute nodes (3 by default)
 - 💻 Compute/workload modelling
 - 🌡️ Thermal modelling
 - ⚡ Power reserve modelling
@@ -57,7 +59,6 @@ Infrastructure Memory
 - ✅ Complete JSON-safe world checkpoints with restore support
 - ✅ Configurable mission-priority profiles
 - ✅ Optional SQLite persistence for operational events and decisions
-- ✅ Configurable mission-priority profiles and scalable multi-node simulation
 - ✅ Tamper-evident decision ledger with verifiable hash chain
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
@@ -148,6 +149,7 @@ asib/
 ├── resources.py       # resource envelopes + plan-local reservations
 ├── policy.py          # safety boundaries
 ├── planner.py         # uncertainty-aware multi-node recovery planning
+├── optimizer.py       # bounded counterfactual plan optimization
 ├── engine.py          # observe / shadow / execute / verify loop
 ├── action_executor.py # centralized safe actuation
 ├── counterfactual.py  # future-horizon shadow validation
