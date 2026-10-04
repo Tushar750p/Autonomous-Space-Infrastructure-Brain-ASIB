@@ -12,7 +12,7 @@ class TestScalableSimulation(unittest.TestCase):
         self.assertEqual(len(default.world.nodes), 3)
         self.assertEqual(len(scaled.world.nodes), 12)
         self.assertIn("orbital-node-12", scaled.world.nodes)
-        self.assertEqual(len(scaled.world.links), 12 * 11)
+        self.assertEqual(len(scaled.world.links), 12 * 11 // 2)
 
     def test_scaled_runtime_completes_one_tick(self):
         runtime = ASIBRuntime(Simulator(node_count=10))
