@@ -1,20 +1,60 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from .models import World
 
 
-@dataclass
+@dataclass(frozen=True)
 class MissionObjective:
     name: str
     target: float
     weight: float
 
 
+@dataclass(frozen=True)
+class MissionProfile:
+    """Mission-level scoring profile with validated objective weights."""
+
+    name: str = "default"
+    availability_weight: float = 0.35
+    thermal_weight: float = 0.25
+    power_weight: float = 0.20
+    critical_service_weight: float = 0.10
+    network_weight: float = 0.10
+
+    def normalized(self) -> "MissionProfile":
+        weights = [
+            self.availability_weight,
+            self.thermal_weight,
+            self.power_weight,
+            self.critical_service_weight,
+            self.network_weight,
+        ]
+        if any(weight < 0 for weight in weights):
+            raise ValueError("Mission weights must be non-negative")
+        total = sum(weights)
+        if total <= 0:
+            raise ValueError("Mission weights must sum to a positive value")
+        return MissionProfile(
+            name=self.name,
+            availability_weight=self.availability_weight / total,
+            thermal_weight=self.thermal_weight / total,
+            power_weight=self.power_weight / total,
+            critical_service_weight=self.critical_service_weight / total,
+            network_weight=self.network_weight / total,
+        )
+
+
 class MissionEvaluator:
-    """Scores simulated infrastructure while exposing mission-level health metrics."""
+    """Scores simulated infrastructure with explicit, configurable mission priorities."""
+
+    def __init__(self, profile: MissionProfile | None = None):
+        self.profile = (profile or MissionProfile()).normalized()
 
     def evaluate(self, world: World) -> dict:
         if not world.nodes:
             return {
+                "profile": self.profile.name,
                 "availability_pct": 0.0,
                 "thermal_health_pct": 0.0,
                 "power_health_pct": 0.0,
@@ -39,7 +79,7 @@ class MissionEvaluator:
             )
             for n in world.nodes.values()
         )
-        power = sum(n.power_pct for n in world.nodes.values())
+        power = sum(max(0.0, min(100.0, n.power_pct)) for n in world.nodes.values())
 
         availability = 100.0 * nominal / count
         thermal_health = thermal / count
@@ -47,15 +87,17 @@ class MissionEvaluator:
         critical_service = 100.0 * serviceable / count
         network_health = 100.0 * network_healthy / count
 
+        p = self.profile
         score = (
-            0.35 * availability
-            + 0.25 * thermal_health
-            + 0.20 * power_health
-            + 0.10 * critical_service
-            + 0.10 * network_health
+            p.availability_weight * availability
+            + p.thermal_weight * thermal_health
+            + p.power_weight * power_health
+            + p.critical_service_weight * critical_service
+            + p.network_weight * network_health
         )
 
         return {
+            "profile": self.profile.name,
             "availability_pct": round(availability, 2),
             "thermal_health_pct": round(thermal_health, 2),
             "power_health_pct": round(power_health, 2),
