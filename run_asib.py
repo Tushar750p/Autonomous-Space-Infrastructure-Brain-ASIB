@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run an ASIB digital-twin fault scenario")
     parser.add_argument(
         "scenario",
-        choices=["thermal", "power", "network", "compound"],
+        choices=["thermal", "power", "network", "partition", "compute", "earth-loss", "compound"],
         default="compound",
         nargs="?",
     )
