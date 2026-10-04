@@ -63,24 +63,36 @@ class ASIBBrain:
                                     "Node isolated from coordination", action=action.action_type))
         return events
 
-    def verify(self, world: World, actions: list[Action]) -> list[Event]:
+    def verify(self, world: World, actions: list[Action], execution_events: list[Event]) -> list[Event]:
+        """Verify only actions that actually executed; blocked actions cannot be marked successful."""
         results: list[Event] = []
+        executed_types = {(event.node_id, event.action) for event in execution_events if event.event_type == "action"}
+
         for action in actions:
+            if (action.source_node, action.action_type) not in executed_types:
+                results.append(Event(world.tick, "verification", action.source_node,
+                                     "Action not verified because execution did not occur",
+                                     "warning", action.action_type))
+                continue
+
             node = world.nodes[action.source_node]
             safe = node.temperature_c < self.policy.THERMAL_CRITICAL and node.power_pct > self.policy.POWER_CRITICAL
             if action.action_type == "migrate" and action.target_node:
                 safe = safe and world.nodes[action.target_node].cpu_load <= 100.0
+
             status = "verified" if safe else "not_verified"
             results.append(Event(world.tick, "verification", node.node_id,
-                                 f"Action verification: {status}", "info" if safe else "critical",
+                                 f"Action verification: {status}",
+                                 "info" if safe else "critical",
                                  action.action_type))
         return results
 
     def step(self, world: World) -> list[Event]:
         observed = self.observe(world)
         plan = self.planner.plan(world)
-        actions = self.execute(world, plan.actions)
-        verified = self.verify(world, actions)
-        history = observed + actions + verified
+        execution_events = self.execute(world, plan.actions)
+        verified = self.verify(world, plan.actions, execution_events)
+
+        history = observed + execution_events + verified
         world.memory.extend(history)
         return history
