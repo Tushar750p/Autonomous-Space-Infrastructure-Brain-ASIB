@@ -71,6 +71,20 @@ class TestASIBSystem(unittest.TestCase):
         self.assertGreater(node.power_pct, 12)
         self.assertTrue(node.network_ok)
 
+    def test_failed_robot_task_is_reassigned(self):
+        sim = Simulator()
+        fleet = RobotFleet(sim.world)
+        fleet.enqueue("orbital-node-01", "inspect-and-service", priority=10)
+        fleet.dispatch()
+        fleet.step()
+
+        fleet.inject_failure("maintenance-01")
+        events = fleet.requeue_failed_tasks()
+        self.assertTrue(any(event.event_type == "robot_reassignment" for event in events))
+
+        fleet.dispatch()
+        self.assertEqual(fleet.robots["maintenance-02"].status.value, "traveling")
+
     def test_decision_trace_is_recorded(self):
         sim = Simulator()
         sim.inject_thermal_failure("orbital-node-01", 96)
