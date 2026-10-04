@@ -8,6 +8,7 @@ from .config import ASIBConfig
 from .experiments import run_experiment_suite
 from .health import HealthService
 from .mission import MissionEvaluator
+from .postmortem import PostmortemService
 from .predictor import RiskPredictor
 from .runtime import ASIBRuntime
 from .simulator import Simulator
@@ -119,6 +120,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     "replay_valid": state["replay"]["valid"],
                 })
 
+        if parsed.path == "/api/postmortem":
+            with self.lock:
+                return self.json_response(PostmortemService(self.runtime).generate().as_dict())
+
         if parsed.path == "/api/tick":
             with self.lock:
                 report = self.runtime.tick()
@@ -200,6 +205,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Resource Envelope</h3><pre id="resources">Loading...</pre></div>
 </div>
 <div class="card"><h3>Experiment Validation</h3><pre id="experiments">Run the validation suite to compare ASIB against a passive baseline.</pre></div>
+<div class="card"><h3>Latest Incident Postmortem</h3><pre id="postmortem">Loading...</pre></div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
 
 <script>
@@ -238,6 +244,8 @@ async function refresh(){
  document.getElementById('replay').textContent=JSON.stringify(d.replay,null,2);
  document.getElementById('resources').textContent=JSON.stringify(d.resources,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
+ const pm=await (await fetch('/api/postmortem',{cache:'no-store'})).json();
+ document.getElementById('postmortem').textContent=JSON.stringify(pm,null,2);
 }
 refresh(); setInterval(refresh,1500);
 </script>
