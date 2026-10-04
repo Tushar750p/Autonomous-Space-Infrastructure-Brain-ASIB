@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from .models import Action, AutonomyMode, World
+from .network import NetworkModel
 from .policy import SafetyPolicy
 
 
@@ -10,10 +12,11 @@ class Plan:
 
 
 class MultiNodePlanner:
-    """Deterministic utility heuristic for multi-node recovery."""
+    """Deterministic, safety-first planner for distributed recovery."""
 
     def __init__(self, policy: SafetyPolicy | None = None):
         self.policy = policy or SafetyPolicy()
+        self.network = NetworkModel()
 
     def plan(self, world: World) -> Plan:
         actions: list[Action] = []
@@ -34,6 +37,7 @@ class MultiNodePlanner:
                     n for n in world.nodes.values()
                     if n.node_id != source.node_id
                     and n.network_ok
+                    and self.network.is_connected(world, source.node_id, n.node_id)
                     and n.temperature_c < self.policy.THERMAL_DEGRADED
                     and n.power_pct > self.policy.POWER_LOW
                     and n.free_cpu >= 5.0
