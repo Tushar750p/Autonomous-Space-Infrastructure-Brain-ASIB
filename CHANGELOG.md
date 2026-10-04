@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.2 — 2026-10-04
+
+### Added
+- Deterministic Monte Carlo-style robustness execution and CLI.
+- Configurable mission-priority scoring profiles.
+- Scalable deterministic multi-node simulation.
+- Optional SQLite operational event and decision persistence.
+- Robustness and scalability test coverage.
+
+### Operations
+- Docker Compose now persists the operational journal in a named volume.
+- Control room exposes robustness and storage status endpoints.
+
+
 ## 0.5.1 — 2026-10-04
 
 ### Added
