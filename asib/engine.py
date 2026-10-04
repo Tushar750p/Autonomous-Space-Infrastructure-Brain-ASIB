@@ -1,3 +1,5 @@
+from .action_executor import ActionExecutor
+from .counterfactual import CounterfactualEvaluator
 from .models import Action, Event, NodeStatus, World
 from .planner import MultiNodePlanner
 from .policy import SafetyPolicy
@@ -11,6 +13,8 @@ class ASIBBrain:
         self.policy = SafetyPolicy()
         self.planner = MultiNodePlanner(self.policy)
         self.validator = SafetyValidator()
+        self.executor = ActionExecutor(self.policy, self.validator)
+        self.counterfactual = CounterfactualEvaluator(self.executor)
 
     def observe(self, world: World) -> list[Event]:
         events: list[Event] = []
@@ -37,92 +41,85 @@ class ASIBBrain:
         return events
 
     def execute(self, world: World, actions: list[Action], trace_id: str) -> list[Event]:
-        events: list[Event] = []
-        for action in actions:
-            source = world.nodes[action.source_node]
-            if not self.policy.allow(world, action):
-                events.append(Event(world.tick, "blocked_action", source.node_id,
-                                    f"Blocked unsafe action: {action.action_type}", "critical",
-                                    action.action_type, trace_id))
-                continue
-
-            if action.action_type == "migrate" and action.target_node:
-                target = world.nodes[action.target_node]
-                amount = min(action.amount, max(0.0, source.workload - source.critical_workload), target.free_cpu)
-                if amount > 0:
-                    source.workload -= amount
-                    source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
-                    target.workload += amount
-                    target.cpu_load = min(100.0, target.cpu_load + amount)
-                    events.append(Event(world.tick, "action", source.node_id,
-                                        f"Migrated {amount:.1f} workload to {target.node_id}", action=action.action_type,
-                                        trace_id=trace_id))
-            elif action.action_type == "shed":
-                amount = min(action.amount, max(0.0, source.workload - source.critical_workload))
-                source.workload -= amount
-                source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
-                events.append(Event(world.tick, "action", source.node_id,
-                                    f"Shed {amount:.1f} non-critical workload", action=action.action_type,
-                                    trace_id=trace_id))
-            elif action.action_type == "reduce_power":
-                amount = min(action.amount, max(0.0, source.workload - source.critical_workload))
-                source.workload -= amount
-                source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
-                events.append(Event(world.tick, "action", source.node_id,
-                                    f"Reduced load by {amount:.1f} for power conservation", action=action.action_type,
-                                    trace_id=trace_id))
-            elif action.action_type == "isolate":
-                source.network_ok = False
-                source.status = NodeStatus.ISOLATED
-                events.append(Event(world.tick, "action", source.node_id,
-                                    "Node isolated from coordination", action=action.action_type,
-                                    trace_id=trace_id))
-
-        report = self.validator.validate(world)
-        for violation in report.violations:
-            events.append(Event(
-                world.tick,
-                "invariant_violation",
-                violation.node_id,
-                f"{violation.invariant}: {violation.message}",
-                "critical",
-                trace_id=trace_id,
-            ))
-        return events
+        return self.executor.execute(world, actions, trace_id)
 
     def verify(self, world: World, actions: list[Action], execution_events: list[Event], trace_id: str) -> list[Event]:
         results: list[Event] = []
-        executed_types = {(event.node_id, event.action) for event in execution_events if event.event_type == "action"}
+        executed_types = {
+            (event.node_id, event.action)
+            for event in execution_events
+            if event.event_type == "action"
+        }
         invariant_report = self.validator.validate(world)
 
         for action in actions:
             if (action.source_node, action.action_type) not in executed_types:
-                results.append(Event(world.tick, "verification", action.source_node,
-                                     "Action not verified because execution did not occur",
-                                     "warning", action.action_type, trace_id))
+                results.append(Event(
+                    world.tick,
+                    "verification",
+                    action.source_node,
+                    "Action not verified because execution did not occur",
+                    "warning",
+                    action.action_type,
+                    trace_id,
+                ))
                 continue
 
             node = world.nodes[action.source_node]
-            safe = node.temperature_c < self.policy.THERMAL_CRITICAL and node.power_pct > self.policy.POWER_CRITICAL
+            safe = invariant_report.safe
+
             if action.action_type == "migrate" and action.target_node:
-                safe = safe and world.nodes[action.target_node].cpu_load <= 100.0
-            safe = safe and invariant_report.safe
+                target = world.nodes[action.target_node]
+                safe = (
+                    safe
+                    and node.workload >= node.critical_workload
+                    and target.cpu_load <= 100.0
+                )
+            elif action.action_type in {"shed", "reduce_power"}:
+                safe = safe and node.workload >= node.critical_workload
+            elif action.action_type == "isolate":
+                safe = safe and (not node.network_ok) and node.status == NodeStatus.ISOLATED
 
             status = "verified" if safe else "not_verified"
-            results.append(Event(world.tick, "verification", node.node_id,
-                                 f"Action verification: {status}",
-                                 "info" if safe else "critical",
-                                 action.action_type, trace_id))
+            results.append(Event(
+                world.tick,
+                "verification",
+                node.node_id,
+                f"Action verification: {status}",
+                "info" if safe else "critical",
+                action.action_type,
+                trace_id,
+            ))
         return results
 
     def step(self, world: World, knowledge=None) -> list[Event]:
         trace_id = f"T{world.tick + 1:05d}"
         observed = self.observe(world)
         plan = self.planner.plan(world, knowledge=knowledge)
-        execution_events = self.execute(world, plan.actions, trace_id)
-        verified = self.verify(world, plan.actions, execution_events, trace_id)
 
-        history = observed + execution_events + verified
+        shadow = self.counterfactual.evaluate(world, plan.actions, trace_id)
+        shadow_event = None
+        if plan.actions and not shadow.accepted:
+            shadow_event = Event(
+                world.tick,
+                "shadow_reject",
+                "planner",
+                "Proposed plan rejected by counterfactual safety evaluation",
+                "critical",
+                trace_id=trace_id,
+            )
+            execution_events: list[Event] = []
+        else:
+            execution_events = self.execute(world, plan.actions, trace_id)
+
+        verified = self.verify(
+            world,
+            plan.actions if shadow.accepted else [],
+            execution_events,
+            trace_id,
+        )
+
+        history = observed + ([shadow_event] if shadow_event else []) + execution_events + verified
         world.memory.extend(history)
         decision = {
             "trace_id": trace_id,
@@ -133,6 +130,7 @@ class ASIBBrain:
             "executed": [event.message for event in execution_events],
             "verified": [event.message for event in verified],
             "invariants_safe": self.validator.validate(world).safe,
+            "shadow": shadow.as_dict(),
         }
         world.decision_log.append(decision)
         world.audit_ledger.append(decision)
