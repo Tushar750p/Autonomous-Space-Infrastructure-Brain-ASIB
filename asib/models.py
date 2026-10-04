@@ -66,3 +66,4 @@ class World:
     autonomy_mode: AutonomyMode = AutonomyMode.NORMAL
     comms_delay_s: float = 0.2
     global_power_budget_pct: float = 100.0
+    earth_contact_available: bool = True
