@@ -49,6 +49,8 @@ class Simulator:
         self.world.earth_contact_available = True
 
     def advance_physics(self):
+        self.world.environment.advance()
+
         for node in self.world.nodes.values():
             if node.status == NodeStatus.ISOLATED:
                 continue
@@ -56,10 +58,23 @@ class Simulator:
             utilization = node.cpu_load / max(node.cpu_capacity, 1.0)
             node.temperature_c = max(
                 20.0,
-                min(110.0, node.temperature_c + max(-3.0, utilization * 5.0 - 1.5))
+                min(
+                    110.0,
+                    node.temperature_c
+                    + max(-3.0, utilization * 5.0 - 1.5)
+                    + self.world.environment.cooling_bias_c,
+                ),
             )
             drain = max(0.2, utilization * 2.5)
-            node.power_pct = max(0.0, min(100.0, node.power_pct - drain))
+            node.power_pct = max(
+                0.0,
+                min(
+                    100.0,
+                    node.power_pct
+                    + self.world.environment.solar_generation_pct
+                    - drain,
+                ),
+            )
             node.cpu_load = max(0.0, min(100.0, node.workload))
 
             if not node.network_ok:
@@ -69,6 +84,7 @@ class Simulator:
 
     def snapshot(self):
         return {
+            "_environment": self.world.environment.snapshot(),
             node_id: {
                 "cpu_load": round(node.cpu_load, 2),
                 "temperature_c": round(node.temperature_c, 2),
