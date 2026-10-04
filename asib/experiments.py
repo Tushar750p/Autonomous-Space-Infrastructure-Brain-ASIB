@@ -40,6 +40,22 @@ def _earth_loss(sim: Simulator):
     sim.inject_earth_contact_loss()
 
 
+def _eclipse(sim: Simulator):
+    sim.world.environment.phase_deg = 120.0
+    sim.world.nodes["orbital-node-02"].power_pct = 40.0
+
+
+def _eclipse_compound(sim: Simulator):
+    sim.world.environment.phase_deg = 120.0
+    sim.inject_thermal_failure("orbital-node-01", 96)
+    sim.inject_power_failure("orbital-node-02", 40)
+    sim.world.nodes["orbital-node-03"].critical_workload = 0
+    sim.inject_network_failure("orbital-node-03")
+    sim.inject_network_partition("orbital-node-02")
+    sim.inject_comms_delay(12.0)
+    sim.inject_earth_contact_loss()
+
+
 def _compound(sim: Simulator):
     sim.inject_thermal_failure("orbital-node-01", 96)
     sim.inject_power_failure("orbital-node-02", 20)
@@ -58,6 +74,8 @@ def default_experiment_suite() -> tuple[ExperimentCase, ...]:
         ExperimentCase("partition", _partition),
         ExperimentCase("compute", _compute),
         ExperimentCase("earth-loss", _earth_loss),
+        ExperimentCase("eclipse", _eclipse),
+        ExperimentCase("eclipse-compound", _eclipse_compound),
         ExperimentCase("compound", _compound),
     )
 
