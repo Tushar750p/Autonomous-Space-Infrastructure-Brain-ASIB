@@ -20,6 +20,24 @@ def run_fault_scenario(name: str) -> dict:
         sim.inject_compute_overload("orbital-node-01", 45)
     elif name == "earth-loss":
         sim.inject_earth_contact_loss()
+    elif name == "robot-failure":
+        runtime = ASIBRuntime(sim)
+        runtime.robots.enqueue("orbital-node-01", "inspect-and-service", priority=100)
+        runtime.robots.dispatch()
+        runtime.robots.step()
+        failure_event = runtime.robots.inject_failure("maintenance-01")
+        report = runtime.tick()
+        report.events.insert(0, failure_event.__dict__)
+        sim.world.memory.append(failure_event)
+        return {
+            "scenario": name,
+            "mode": sim.world.autonomy_mode.value,
+            "events": report.events,
+            "risks": report.risks,
+            "state": report.state,
+            "knowledge": report.knowledge,
+            "memory_entries": report.memory_entries,
+        }
     elif name == "compound":
         sim.inject_thermal_failure("orbital-node-01", 96)
         sim.inject_power_failure("orbital-node-02", 20)
