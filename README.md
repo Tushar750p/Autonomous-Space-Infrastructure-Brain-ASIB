@@ -58,6 +58,7 @@ Infrastructure Memory
 - ✅ Deterministic Monte Carlo-style robustness suite
 - ✅ Complete JSON-safe world checkpoints with restore support
 - ✅ Configurable mission-priority profiles
+- ✅ Constraint-based counterfactual plan optimization
 - ✅ Optional SQLite persistence for operational events and decisions
 - ✅ Tamper-evident decision ledger with verifiable hash chain
 - 🎯 Mission-health evaluation
@@ -169,6 +170,9 @@ asib/
 ├── postmortem.py      # incident postmortem generator
 ├── checkpoint.py      # complete world checkpoint export/restore
 ├── checkpoint_cli.py  # checkpoint artifact command-line interface
+├── robustness.py      # deterministic robustness trials
+├── robustness_cli.py  # robustness command-line interface
+├── storage.py         # optional SQLite operational persistence
 ├── lab.py             # combined research validation orchestration
 ├── lab_cli.py         # combined research validation CLI
 ├── runtime.py         # closed-loop autonomous runtime
