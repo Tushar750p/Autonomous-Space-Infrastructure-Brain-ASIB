@@ -53,6 +53,9 @@ Infrastructure Memory
 - ✅ Reproducible passive-vs-ASIB experiment suite
 - ✅ Deterministic state replay including orbital environment
 - ✅ Forecast outcome calibration with Brier-score tracking
+- ✅ Deterministic Monte Carlo-style robustness suite
+- ✅ Configurable mission-priority profiles
+- ✅ Optional SQLite persistence for operational events and decisions
 - ✅ Tamper-evident decision ledger with verifiable hash chain
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
@@ -72,6 +75,7 @@ python run_benchmark.py --ticks 20
 python run_experiments.py --ticks 20
 python -m asib.selftest 5
 python -m asib.scenario_cli eclipse
+python -m asib.robustness_cli --ticks 5 --trials 5
 python -m unittest discover -s tests -v
 ```
 
@@ -102,6 +106,10 @@ Audit export: `http://localhost:8080/api/audit`
 Replay export: `http://localhost:8080/api/replay`
 
 Incident postmortem: `http://localhost:8080/api/postmortem`
+
+Robustness validation: `http://localhost:8080/api/robustness?ticks=5&trials=5`
+
+Storage status: `http://localhost:8080/api/storage`
 
 Forecast calibration export: `http://localhost:8080/api/calibration`
 
@@ -182,6 +190,8 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 **V4 — Validation harness:** reproducible passive-vs-ASIB experiments across nine scenarios, future-horizon counterfactual validation and forecast calibration ✅
 
 **V5 — Environmental autonomy:** deterministic orbital eclipse/sunlight dynamics, plan-local resource reservations, environment-aware energy margins and maintenance failure recovery ✅
+
+**V5.5 — Research validation:** deterministic robustness trials, configurable mission profiles, forecast calibration and persistent operational journaling ✅
 
 **V6 — Space integration study:** mission-specific integration research, future hardware qualification and independent verification
 
