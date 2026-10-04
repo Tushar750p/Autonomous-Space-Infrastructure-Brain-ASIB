@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from .models import Event, World
@@ -42,9 +42,17 @@ class RobotFleet:
         self.queue: list[RobotTask] = []
 
     def enqueue(self, node_id: str, task: str = "inspect", priority: int = 1):
+        if node_id not in self.world.nodes:
+            return False
+        if any(item.node_id == node_id for item in self.queue):
+            return False
+        if any(robot.target_node == node_id for robot in self.robots.values()):
+            return False
         available = next((r for r in self.robots.values() if r.status == RobotStatus.IDLE), None)
-        if available:
-            self.queue.append(RobotTask(available.robot_id, node_id, task, priority))
+        if available is None:
+            return False
+        self.queue.append(RobotTask(available.robot_id, node_id, task, priority))
+        return True
 
     def dispatch(self) -> list[Event]:
         events: list[Event] = []
@@ -77,24 +85,35 @@ class RobotFleet:
                         self.world.tick, "robot_arrival", robot.target_node or "unknown",
                         f"{robot.robot_id} arrived at maintenance target", "info"
                     ))
+
             elif robot.status == RobotStatus.SERVICING:
                 robot.task_ticks -= 1
                 robot.battery_pct = max(0.0, robot.battery_pct - 4.0)
                 if robot.task_ticks <= 0:
-                    target = self.world.nodes.get(robot.target_node or "")
+                    target_id = robot.target_node
+                    target = self.world.nodes.get(target_id or "")
                     if target:
                         target.temperature_c = max(30.0, target.temperature_c - 12.0)
                         target.network_ok = True
                     events.append(Event(
-                        self.world.tick, "robot_service", robot.target_node or "unknown",
+                        self.world.tick, "robot_service", target_id or "unknown",
                         f"{robot.robot_id} completed simulated maintenance", "info"
                     ))
                     robot.status = RobotStatus.IDLE
                     robot.target_node = None
-            elif robot.battery_pct <= 15 and robot.status == RobotStatus.IDLE:
+
+            if robot.battery_pct <= 15 and robot.status == RobotStatus.IDLE:
                 robot.status = RobotStatus.SAFE
                 events.append(Event(
                     self.world.tick, "robot_low_power", robot.robot_id,
                     "Robot entered safe state due to low battery", "warning"
                 ))
         return events
+
+    def recharge(self, robot_id: str | None = None):
+        robots = self.robots.values() if robot_id is None else [self.robots[robot_id]]
+        for robot in robots:
+            if robot.status == RobotStatus.SAFE and robot.target_node is None:
+                robot.battery_pct = min(100.0, robot.battery_pct + 50.0)
+                if robot.battery_pct > 20:
+                    robot.status = RobotStatus.IDLE
