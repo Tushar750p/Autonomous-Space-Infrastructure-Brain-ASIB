@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 — 2026-10-04
+
+### Added
+- Deterministic scenario CLI with eclipse and compound-environment scenarios.
+- Direct `python -m asib` module entry point.
+- Extended scenario runner outputs and test coverage.
+
+
 ## 0.5.0 — 2026-10-04
 
 ### Added
