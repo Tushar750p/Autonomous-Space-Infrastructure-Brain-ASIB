@@ -42,6 +42,12 @@ class Simulator:
     def inject_comms_delay(self, delay_s: float):
         self.world.comms_delay_s = max(0.0, delay_s)
 
+    def inject_earth_contact_loss(self):
+        self.world.earth_contact_available = False
+
+    def restore_earth_contact(self):
+        self.world.earth_contact_available = True
+
     def advance_physics(self):
         for node in self.world.nodes.values():
             if node.status == NodeStatus.ISOLATED:
