@@ -77,6 +77,12 @@ class CounterfactualEvaluator:
         if not violations and horizon_ticks > 0:
             future_sim = Simulator()
             future_sim.world = shadow
+            previous_temperature = {
+                node_id: node.temperature_c for node_id, node in shadow.nodes.items()
+            }
+            previous_power = {
+                node_id: node.power_pct for node_id, node in shadow.nodes.items()
+            }
             for _ in range(horizon_ticks):
                 future_sim.advance_physics()
 
@@ -87,6 +93,11 @@ class CounterfactualEvaluator:
                     for node_id in (action.source_node, action.target_node)
                     if node_id is not None
                 }
+                mitigating_sources = {
+                    action.source_node
+                    for action in actions
+                    if action.action_type in {"migrate", "shed", "reduce_power"}
+                }
                 migration_targets = {
                     action.target_node
                     for action in actions
@@ -96,11 +107,21 @@ class CounterfactualEvaluator:
                     for node_id in touched_nodes:
                         node = shadow.nodes[node_id]
                         if node.temperature_c >= self.policy.THERMAL_CRITICAL:
-                            operationally_safe = False
-                            break
+                            if (
+                                node.temperature_c >= self.validator.THERMAL_HARD_LIMIT
+                                or node_id not in mitigating_sources
+                                or previous_temperature.get(node_id, node.temperature_c) < node.temperature_c
+                            ):
+                                operationally_safe = False
+                                break
                         if node.power_pct <= self.policy.POWER_CRITICAL:
-                            operationally_safe = False
-                            break
+                            if (
+                                node.power_pct <= self.validator.POWER_HARD_FLOOR
+                                or node_id not in mitigating_sources
+                                or previous_power.get(node_id, node.power_pct) > node.power_pct
+                            ):
+                                operationally_safe = False
+                                break
 
                 if operationally_safe:
                     for node_id in migration_targets:
@@ -117,6 +138,13 @@ class CounterfactualEvaluator:
                     future_safe = False
                     future_failure_tick = shadow.tick
                     break
+
+                previous_temperature = {
+                    node_id: node.temperature_c for node_id, node in shadow.nodes.items()
+                }
+                previous_power = {
+                    node_id: node.power_pct for node_id, node in shadow.nodes.items()
+                }
 
         accepted = (
             executed == len(actions)
