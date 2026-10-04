@@ -30,6 +30,7 @@ asib-experiments = "asib.experiments_cli:main"
 asib-selftest = "asib.selftest:main"
 asib-scenario = "asib.scenario_cli:main"
 asib-robustness = "asib.robustness_cli:main"
+asib-checkpoint = "asib.checkpoint_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["asib*"]
