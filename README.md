@@ -46,6 +46,9 @@ Infrastructure Memory
 - 🛡️ Safety guardrails for autonomous actions
 - ✅ Execution-aware verification
 - ✅ Explicit post-action safety invariants
+- ✅ Tamper-evident decision ledger (SHA-256 chain)
+- ✅ Simulation-only hardware-in-the-loop boundary
+- ✅ Reproducible passive-vs-ASIB experiment suite
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
 - 🤖 Simulated maintenance-robot fleet
@@ -60,6 +63,7 @@ Infrastructure Memory
 python -m asib.cli
 python run_asib.py compound
 python run_benchmark.py --ticks 20
+python run_experiments.py --ticks 20
 python -m unittest discover -s tests -v
 ```
 
@@ -111,6 +115,9 @@ asib/
 ├── network.py      # node topology and partitions
 ├── telemetry.py    # telemetry history
 ├── robotics.py     # safe maintenance-robot simulator
+├── hil.py          # simulation-only hardware boundary
+├── audit.py        # tamper-evident decision ledger
+├── experiments.py  # passive-vs-ASIB validation suite
 ├── runtime.py      # closed-loop autonomous runtime
 ├── benchmark.py    # reproducible system benchmark
 ├── scenarios.py    # repeatable fault scenarios
@@ -134,6 +141,10 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 **V1.5 — Physics + Prediction:** richer thermal/power dynamics, telemetry trends, topology and maintenance-robot simulation ✅
 
 **V2 — Distributed autonomy:** delayed observer-specific knowledge, communication-aware planning, uncertainty-aware coordination, execution-time revalidation and explicit safety invariants ✅
+
+**V3 — Safe test interfaces:** simulation-only hardware-in-the-loop boundary and tamper-evident decision audit ✅
+
+**V4 — Validation harness:** reproducible passive-vs-ASIB experiments across seven fault scenarios ✅
 
 **V3 — Hardware-in-the-loop:** simulated interfaces for future physical testbeds, with strict separation from real mission control
 
