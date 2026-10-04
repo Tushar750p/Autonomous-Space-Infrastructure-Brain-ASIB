@@ -32,6 +32,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "autonomy_mode": world.autonomy_mode.value,
             "comms_delay_s": world.comms_delay_s,
             "earth_contact_available": world.earth_contact_available,
+            "environment": world.environment.snapshot(),
             "nodes": rt.simulator.snapshot(),
             "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
             "mission": MissionEvaluator().evaluate(world),
@@ -153,6 +154,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 
 <div id="kpis" class="grid"></div>
 
+<div class="card"><h3>Orbital Environment</h3><pre id="environment">Loading...</pre></div>
 <div class="card"><h3>Node Telemetry</h3><div id="nodeTable"></div></div>
 <div class="grid">
 <div class="card"><h3>Risk Forecast</h3><pre id="risks">Loading...</pre></div>
@@ -184,13 +186,15 @@ async function refresh(){
  '<div class="card"><div class="muted">Memory events</div><div class="kpi">'+d.memory_entries+'</div></div>'+
  '<div class="card"><div class="muted">Comms delay</div><div class="kpi">'+d.comms_delay_s+'s</div></div>'+
  '<div class="card"><div class="muted">Max knowledge age</div><div class="kpi">'+d.knowledge.max_age_ticks+'t</div></div>'+
- '<div class="card"><div class="muted">Earth contact</div><div class="kpi">'+(d.earth_contact_available?'AVAILABLE':'LOST')+'</div></div>';
+ '<div class="card"><div class="muted">Earth contact</div><div class="kpi">'+(d.earth_contact_available?'AVAILABLE':'LOST')+'</div></div>'+
+ '<div class="card"><div class="muted">Orbit phase</div><div class="kpi">'+d.environment.phase_deg+'°</div><div class="muted">'+(d.environment.in_eclipse?'ECLIPSE':'SUNLIT')+'</div></div>';
 
  let rows='<table><tr><th>Node</th><th>Temp</th><th>Power</th><th>CPU</th><th>Workload</th><th>Network</th><th>Status</th></tr>';
  for(const [id,n] of Object.entries(d.nodes)){
    rows+='<tr><td>'+esc(id)+'</td><td>'+n.temperature_c+'°C</td><td>'+n.power_pct+'%</td><td>'+n.cpu_load+'%</td><td>'+n.workload+'</td><td>'+ (n.network_ok?'UP':'DOWN') +'</td><td class="status">'+esc(n.status)+'</td></tr>';
  }
  document.getElementById('nodeTable').innerHTML=rows+'</table>';
+ document.getElementById('environment').textContent=JSON.stringify(d.environment,null,2);
  document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
  document.getElementById('knowledge').textContent=JSON.stringify(d.knowledge,null,2);
  document.getElementById('robots').textContent=JSON.stringify(d.robots,null,2);
