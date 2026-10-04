@@ -23,6 +23,16 @@ class TestMissionMetrics(unittest.TestCase):
 
 
 class TestEnvironmentRisk(unittest.TestCase):
+    def test_storage_pressure_adds_risk_context(self):
+        sim = Simulator()
+        node = sim.world.nodes["orbital-node-01"]
+        node.storage_pct = 95
+
+        risks = RiskPredictor().predict(sim.world)
+        target = next(risk for risk in risks if risk.node_id == node.node_id)
+
+        self.assertIn("storage headroom low", target.reasons)
+
     def test_eclipse_adds_power_risk_context(self):
         sim = Simulator()
         node = sim.world.nodes["orbital-node-01"]
