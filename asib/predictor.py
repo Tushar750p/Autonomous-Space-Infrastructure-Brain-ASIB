@@ -33,10 +33,15 @@ class RiskPredictor:
                 score += min(35.0, (30.0 - node.power_pct) * 1.5)
                 reasons.append("power reserve low")
 
+            eclipse_change_ticks = world.environment.ticks_until_eclipse_change()
             if world.environment.in_eclipse:
                 if node.power_pct <= 50:
                     score += 8.0
                     reasons.append("eclipse reducing available solar input")
+                confidence += 0.05
+            elif eclipse_change_ticks <= 1 and node.power_pct <= 50:
+                score += 5.0
+                reasons.append("eclipse transition imminent")
                 confidence += 0.05
 
             if node.cpu_load >= 80:
