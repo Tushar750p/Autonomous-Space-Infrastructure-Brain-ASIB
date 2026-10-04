@@ -47,6 +47,9 @@ class RiskPredictor:
             if node.cpu_load >= 80:
                 score += 20.0
                 reasons.append("compute saturation")
+            if node.storage_pct >= 80:
+                score += min(15.0, (node.storage_pct - 75.0) * 0.6)
+                reasons.append("storage headroom low")
             if not node.network_ok:
                 score += 30.0
                 reasons.append("network unavailable")
