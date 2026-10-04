@@ -105,7 +105,9 @@ Incident postmortem: `http://localhost:8080/api/postmortem`
 
 Forecast calibration export: `http://localhost:8080/api/calibration`
 
-Environment variables: `ASIB_HOST`, `ASIB_PORT`, `ASIB_TICK_INTERVAL_S`.
+Environment variables: `ASIB_HOST`, `ASIB_PORT`, `ASIB_TICK_INTERVAL_S`, `ASIB_STORE_PATH`.
+
+Set `ASIB_STORE_PATH=/data/asib.db` to persist operational events and decision traces in SQLite.
 
 ## Example autonomous scenario
 
