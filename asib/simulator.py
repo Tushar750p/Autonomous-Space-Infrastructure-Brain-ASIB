@@ -1,4 +1,5 @@
 from .models import Node, NodeStatus, World
+from .network import NetworkModel
 
 
 class Simulator:
@@ -6,10 +7,20 @@ class Simulator:
 
     def __init__(self):
         self.world = World(nodes={
-            "orbital-node-01": Node("orbital-node-01", cpu_load=45, temperature_c=50, power_pct=78, workload=70, critical_workload=25),
-            "orbital-node-02": Node("orbital-node-02", cpu_load=35, temperature_c=48, power_pct=75, workload=55, critical_workload=15),
-            "orbital-node-03": Node("orbital-node-03", cpu_load=20, temperature_c=42, power_pct=88, workload=35, critical_workload=10),
+            "orbital-node-01": Node(
+                "orbital-node-01", cpu_load=45, temperature_c=50,
+                power_pct=78, workload=70, critical_workload=25
+            ),
+            "orbital-node-02": Node(
+                "orbital-node-02", cpu_load=35, temperature_c=48,
+                power_pct=75, workload=55, critical_workload=15
+            ),
+            "orbital-node-03": Node(
+                "orbital-node-03", cpu_load=20, temperature_c=42,
+                power_pct=88, workload=35, critical_workload=10
+            ),
         })
+        NetworkModel().ensure_full_mesh(self.world)
 
     def inject_thermal_failure(self, node_id: str, temperature_c: float = 92.0):
         self.world.nodes[node_id].temperature_c = temperature_c
@@ -19,6 +30,9 @@ class Simulator:
 
     def inject_network_failure(self, node_id: str):
         self.world.nodes[node_id].network_ok = False
+
+    def inject_network_partition(self, node_id: str):
+        NetworkModel().partition_node(self.world, node_id)
 
     def inject_compute_overload(self, node_id: str, extra_load: float = 45.0):
         node = self.world.nodes[node_id]
@@ -30,12 +44,19 @@ class Simulator:
 
     def advance_physics(self):
         for node in self.world.nodes.values():
+            if node.status == NodeStatus.ISOLATED:
+                continue
+
             utilization = node.cpu_load / max(node.cpu_capacity, 1.0)
-            node.temperature_c = max(20.0, min(110.0, node.temperature_c + max(-3.0, utilization * 5.0 - 1.5)))
+            node.temperature_c = max(
+                20.0,
+                min(110.0, node.temperature_c + max(-3.0, utilization * 5.0 - 1.5))
+            )
             drain = max(0.2, utilization * 2.5)
             node.power_pct = max(0.0, min(100.0, node.power_pct - drain))
             node.cpu_load = max(0.0, min(100.0, node.workload))
-            if node.status != NodeStatus.ISOLATED and not node.network_ok:
+
+            if not node.network_ok:
                 node.status = NodeStatus.DEGRADED
 
         self.world.tick += 1
