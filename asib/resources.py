@@ -35,6 +35,7 @@ class ResourceEnvelope:
     free_cpu: float
     thermal_headroom_c: float
     power_reserve_pct: float
+    storage_headroom_pct: float
     network_ok: bool
 
     @classmethod
@@ -44,6 +45,7 @@ class ResourceEnvelope:
             free_cpu=round(node.free_cpu, 2),
             thermal_headroom_c=round(max(0.0, 85.0 - node.temperature_c), 2),
             power_reserve_pct=round(max(0.0, node.power_pct), 2),
+            storage_headroom_pct=round(max(0.0, 100.0 - node.storage_pct), 2),
             network_ok=node.network_ok,
         )
 
@@ -53,6 +55,7 @@ class ResourceEnvelope:
             "free_cpu": self.free_cpu,
             "thermal_headroom_c": self.thermal_headroom_c,
             "power_reserve_pct": self.power_reserve_pct,
+            "storage_headroom_pct": self.storage_headroom_pct,
             "network_ok": self.network_ok,
         }
 
@@ -71,6 +74,9 @@ def system_resource_report(world) -> dict:
     return {
         "total_free_cpu": round(sum(item.free_cpu for item in envelopes), 2),
         "total_power_reserve_pct": round(sum(item.power_reserve_pct for item in envelopes), 2),
+        "min_storage_headroom_pct": round(
+            min((item.storage_headroom_pct for item in envelopes), default=0.0), 2
+        ),
         "min_thermal_headroom_c": round(
             min((item.thermal_headroom_c for item in envelopes), default=0.0), 2
         ),
