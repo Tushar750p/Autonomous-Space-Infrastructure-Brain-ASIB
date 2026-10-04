@@ -61,7 +61,7 @@ class PostmortemService:
             actions_taken=[e.message for e in actions[-10:]],
             verification=[e.message for e in verification[-10:]],
             unresolved_risks=unresolved[:10],
-            mission=MissionEvaluator().evaluate(world),
+            mission=self.runtime.mission.evaluate(world),
             decision_class=decision.get("decision_class", "hold"),
             audit_valid=world.audit_ledger.verify(),
         )
