@@ -56,6 +56,7 @@ Infrastructure Memory
 - ✅ Deterministic Monte Carlo-style robustness suite
 - ✅ Configurable mission-priority profiles
 - ✅ Optional SQLite persistence for operational events and decisions
+- ✅ Configurable mission-priority profiles and scalable multi-node simulation
 - ✅ Tamper-evident decision ledger with verifiable hash chain
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
@@ -116,6 +117,8 @@ Forecast calibration export: `http://localhost:8080/api/calibration`
 Environment variables: `ASIB_HOST`, `ASIB_PORT`, `ASIB_TICK_INTERVAL_S`, `ASIB_STORE_PATH`.
 
 Set `ASIB_STORE_PATH=/data/asib.db` to persist operational events and decision traces in SQLite.
+
+For larger simulations, instantiate `Simulator(node_count=N)`; the default remains 3 nodes.
 
 ## Example autonomous scenario
 
