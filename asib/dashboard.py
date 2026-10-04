@@ -42,7 +42,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "environment": world.environment.snapshot(),
             "nodes": rt.simulator.snapshot(),
             "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
-            "mission": MissionEvaluator().evaluate(world),
+            "mission": rt.mission.evaluate(world),
             "memory_entries": len(world.memory),
             "knowledge": rt.knowledge.summary(world),
             "robots": {k: v.__dict__ for k, v in rt.robots.robots.items()},
