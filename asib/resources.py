@@ -57,6 +57,15 @@ class ResourceEnvelope:
         }
 
 
+def migration_power_floor(world) -> float:
+    """Reserve extra energy when the orbital environment is in eclipse."""
+    if world.environment.in_eclipse:
+        return 35.0
+    if world.environment.ticks_until_eclipse_change() <= 1:
+        return 30.0
+    return 25.0
+
+
 def system_resource_report(world) -> dict:
     envelopes = [ResourceEnvelope.from_node(node) for node in world.nodes.values()]
     return {
@@ -70,6 +79,7 @@ def system_resource_report(world) -> dict:
             2,
         ),
         "solar_generation_pct": world.environment.solar_generation_pct,
+        "migration_power_floor_pct": migration_power_floor(world),
         "eclipse": world.environment.in_eclipse,
         "nodes": [item.as_dict() for item in envelopes],
     }
