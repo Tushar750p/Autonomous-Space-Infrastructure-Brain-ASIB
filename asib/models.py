@@ -53,6 +53,8 @@ class Action:
     target_node: str | None = None
     amount: float = 0.0
     reason: str = ""
+    knowledge_age: int = 0
+    knowledge_confidence: float = 1.0
 
 
 @dataclass
