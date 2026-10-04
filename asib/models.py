@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Dict, List
 
 from .audit import DecisionLedger
+from .environment import OrbitalEnvironment
 
 
 class NodeStatus(str, Enum):
@@ -72,3 +73,4 @@ class World:
     global_power_budget_pct: float = 100.0
     earth_contact_available: bool = True
     audit_ledger: DecisionLedger = field(default_factory=DecisionLedger)
+    environment: OrbitalEnvironment = field(default_factory=OrbitalEnvironment)
