@@ -55,3 +55,37 @@ class TestASIBBrain(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_rejected_primary_plan_is_repaired_locally(self):
+        sim = Simulator()
+        source = sim.world.nodes["orbital-node-01"]
+        sim.world.environment.phase_deg = 30.0
+        source.temperature_c = 96.0
+        for node_id in ("orbital-node-02", "orbital-node-03"):
+            sim.world.nodes[node_id].power_pct = 26.0
+
+        events = ASIBBrain().step(sim.world)
+
+        self.assertTrue(any(event.event_type == "shadow_reject" for event in events))
+        self.assertTrue(any(event.event_type == "plan_repair" for event in events))
+        self.assertEqual(sim.world.decision_log[-1]["decision_class"], "repair")
+
+
+    def test_rejected_primary_plan_is_repaired_locally(self):
+        sim = Simulator()
+        source = sim.world.nodes["orbital-node-01"]
+        sim.world.environment.phase_deg = 30.0
+        source.temperature_c = 96.0
+        for node_id in ("orbital-node-02", "orbital-node-03"):
+            sim.world.nodes[node_id].power_pct = 26.0
+
+        events = ASIBBrain().step(sim.world)
+
+        self.assertTrue(any(event.event_type == "shadow_reject" for event in events))
+        self.assertTrue(any(event.event_type == "plan_repair" for event in events))
+        self.assertEqual(sim.world.decision_log[-1]["decision_class"], "repair")
+
+
+if __name__ == "__main__":
+    unittest.main()
