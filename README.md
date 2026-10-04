@@ -120,37 +120,33 @@ ASIB can:
 
 ```
 asib/
-├── models.py       # world, nodes, actions, events
-├── simulator.py    # deterministic digital twin + fault injection
-├── environment.py  # orbital sunlight/eclipse environment
-├── resources.py    # resource envelopes + reservations
-├── policy.py       # safety boundaries
-├── planner.py      # uncertainty-aware multi-node recovery planning
-├── engine.py       # observe / shadow / execute / verify loop
+├── models.py          # world, nodes, actions, events
+├── simulator.py       # deterministic digital twin + fault injection
+├── environment.py     # orbital sunlight/eclipse environment
+├── resources.py       # resource envelopes + plan-local reservations
+├── policy.py          # safety boundaries
+├── planner.py         # uncertainty-aware multi-node recovery planning
+├── engine.py          # observe / shadow / execute / verify loop
 ├── action_executor.py # centralized safe actuation
 ├── counterfactual.py  # future-horizon shadow validation
-├── distributed.py  # delayed observer-specific infrastructure knowledge
-├── memory.py       # operational memory
-├── predictor.py    # transparent trend-aware risk scoring
-├── mission.py      # mission health metrics
-├── comms.py        # delayed communication model
-├── network.py      # node topology and partitions
-├── telemetry.py    # telemetry history
-├── resources.py    # resource envelopes + plan-local reservations
-├── calibration.py  # forecast outcome calibration
-├── robotics.py     # safe maintenance-robot simulator
-├── hil.py          # simulation-only hardware boundary
-├── audit.py        # tamper-evident decision ledger
-├── calibration.py  # forecast outcome calibration
-├── experiments.py  # passive-vs-ASIB validation suite
-├── replay.py       # tamper-evident deterministic state replay
-       # deterministic state replay journal
-├── health.py       # consolidated operational health
-├── postmortem.py   # incident postmortem generator
-├── runtime.py      # closed-loop autonomous runtime
-├── benchmark.py    # reproducible system benchmark
-├── scenarios.py    # repeatable fault scenarios
-└── dashboard.py    # autonomous browser control room
+├── distributed.py     # delayed observer-specific infrastructure knowledge
+├── memory.py          # operational memory
+├── predictor.py       # transparent trend-aware risk scoring
+├── mission.py         # mission health metrics
+├── comms.py           # delayed communication model
+├── network.py         # node topology and partitions
+├── telemetry.py       # telemetry history
+├── calibration.py     # forecast outcome calibration
+├── robotics.py        # safe maintenance-robot simulator
+├── hil.py             # simulation-only hardware boundary
+├── audit.py           # tamper-evident decision ledger
+├── replay.py          # tamper-evident deterministic state replay
+├── health.py          # consolidated operational health
+├── postmortem.py      # incident postmortem generator
+├── runtime.py         # closed-loop autonomous runtime
+├── benchmark.py       # reproducible system benchmark
+├── scenarios.py       # repeatable fault scenarios
+└── dashboard.py       # autonomous browser control room
 ```
 
 ## Research direction
