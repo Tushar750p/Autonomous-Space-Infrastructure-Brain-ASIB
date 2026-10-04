@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List
 
+from .audit import DecisionLedger
+
 
 class NodeStatus(str, Enum):
     NOMINAL = "nominal"
@@ -69,3 +71,4 @@ class World:
     comms_delay_s: float = 0.2
     global_power_budget_pct: float = 100.0
     earth_contact_available: bool = True
+    audit_ledger: DecisionLedger = field(default_factory=DecisionLedger)
