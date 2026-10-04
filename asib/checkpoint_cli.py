@@ -22,12 +22,8 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.scenario:
-        result = run_fault_scenario(args.scenario)
         sim = Simulator()
-        runtime = ASIBRuntime(sim)
-        runtime.tick()
-        # Scenario runner is intentionally side-effect free with respect to this
-        # process; reproduce the scenario locally for a checkpoint artifact.
+        # Reproduce the deterministic scenario locally for the checkpoint artifact.
         if args.scenario == "thermal":
             sim.inject_thermal_failure("orbital-node-01")
         elif args.scenario == "power":
