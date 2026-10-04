@@ -6,7 +6,7 @@ from asib.config import ASIBConfig
 
 class TestConfig(unittest.TestCase):
     def test_defaults(self):
-        for key in ("ASIB_HOST", "ASIB_PORT", "ASIB_TICK_INTERVAL_S"):
+        for key in ("ASIB_HOST", "ASIB_PORT", "ASIB_TICK_INTERVAL_S", "ASIB_STORE_PATH"):
             os.environ.pop(key, None)
 
         config = ASIBConfig.from_env()
