@@ -136,14 +136,15 @@ asib/
 ├── comms.py        # delayed communication model
 ├── network.py      # node topology and partitions
 ├── telemetry.py    # telemetry history
-├── resources.py    # plan-local resource reservations
+├── resources.py    # resource envelopes + plan-local reservations
 ├── calibration.py  # forecast outcome calibration
 ├── robotics.py     # safe maintenance-robot simulator
 ├── hil.py          # simulation-only hardware boundary
 ├── audit.py        # tamper-evident decision ledger
+├── calibration.py  # forecast outcome calibration
 ├── experiments.py  # passive-vs-ASIB validation suite
-├── audit.py        # tamper-evident decision ledger
-├── replay.py       # deterministic state replay journal
+├── replay.py       # tamper-evident deterministic state replay
+       # deterministic state replay journal
 ├── health.py       # consolidated operational health
 ├── postmortem.py   # incident postmortem generator
 ├── runtime.py      # closed-loop autonomous runtime
@@ -179,6 +180,10 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 **V5 — Environmental autonomy:** deterministic orbital eclipse/sunlight dynamics, plan-local resource reservations, environment-aware energy margins and maintenance failure recovery ✅
 
 **V6 — Space integration study:** mission-specific integration research, future hardware qualification and independent verification
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
 
 ## Intellectual property
 
