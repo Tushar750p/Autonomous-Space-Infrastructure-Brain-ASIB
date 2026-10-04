@@ -99,18 +99,42 @@ class ASIBBrain:
 
         shadow = self.counterfactual.evaluate(world, plan.actions, trace_id)
         shadow_event = None
+        repair_event = None
         needs_human_review = False
+
         if plan.actions and not shadow.accepted:
-            needs_human_review = True
             shadow_event = Event(
                 world.tick,
                 "shadow_reject",
                 "planner",
-                "Proposed plan rejected by counterfactual safety evaluation",
+                "Primary plan rejected by counterfactual safety evaluation",
                 "critical",
                 trace_id=trace_id,
             )
-            execution_events: list[Event] = []
+
+            fallback = self.planner.fallback_plan(world)
+            fallback_shadow = self.counterfactual.evaluate(
+                world,
+                fallback.actions,
+                trace_id,
+                horizon_ticks=1,
+            )
+
+            if fallback.actions and fallback_shadow.accepted:
+                plan = fallback
+                shadow = fallback_shadow
+                repair_event = Event(
+                    world.tick,
+                    "plan_repair",
+                    "planner",
+                    "Primary plan replaced by migration-free emergency fallback",
+                    "warning",
+                    trace_id=trace_id,
+                )
+                execution_events = self.execute(world, plan.actions, trace_id)
+            else:
+                needs_human_review = True
+                execution_events = []
         else:
             execution_events = self.execute(world, plan.actions, trace_id)
 
@@ -135,7 +159,14 @@ class ASIBBrain:
             trace_id,
         )
 
-        history = observed + ([shadow_event] if shadow_event else []) + ([review_event] if review_event else []) + execution_events + verified
+        history = (
+            observed
+            + ([shadow_event] if shadow_event else [])
+            + ([repair_event] if repair_event else [])
+            + ([review_event] if review_event else [])
+            + execution_events
+            + verified
+        )
         world.memory.extend(history)
         decision = {
             "trace_id": trace_id,
@@ -149,9 +180,11 @@ class ASIBBrain:
             "shadow": shadow.as_dict(),
             "decision_class": (
                 "escalate" if needs_human_review
+                else "repair" if repair_event
                 else "act" if plan.actions
                 else "hold"
             ),
+            "plan_source": "fallback" if repair_event else "primary",
             "needs_human_review": needs_human_review,
         }
         world.decision_log.append(decision)
