@@ -1,12 +1,9 @@
-from .engine import ASIBBrain
 from .runtime import ASIBRuntime
 from .simulator import Simulator
 
 
 def run_fault_scenario(name: str) -> dict:
     sim = Simulator()
-    brain = ASIBBrain()
-
     if name == "thermal":
         sim.inject_thermal_failure("orbital-node-01")
     elif name == "power":
@@ -37,6 +34,9 @@ def run_fault_scenario(name: str) -> dict:
             "state": report.state,
             "knowledge": report.knowledge,
             "memory_entries": report.memory_entries,
+            "environment": report.environment,
+            "resources": report.resources,
+            "forecast_calibration": report.forecast_calibration,
         }
     elif name == "compound":
         sim.inject_thermal_failure("orbital-node-01", 96)
@@ -61,4 +61,7 @@ def run_fault_scenario(name: str) -> dict:
         "state": report.state,
         "knowledge": report.knowledge,
         "memory_entries": report.memory_entries,
+        "environment": report.environment,
+        "resources": report.resources,
+        "forecast_calibration": report.forecast_calibration,
     }
