@@ -133,6 +133,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with self.lock:
                 return self.json_response(self.runtime.forecasts.export())
 
+        if parsed.path == "/api/storage":
+            with self.lock:
+                return self.json_response(self.runtime.storage_status())
+
         if parsed.path == "/api/tick":
             with self.lock:
                 report = self.runtime.tick()
@@ -217,6 +221,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 </div>
 <div class="card"><h3>Experiment Validation</h3><pre id="experiments">Run the validation suite to compare ASIB against a passive baseline.</pre></div>
 <div class="card"><h3>Latest Incident Postmortem</h3><pre id="postmortem">Loading...</pre></div>
+<div class="card"><h3>Persistent Storage</h3><pre id="storage">Loading...</pre></div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
 
 <script>
@@ -259,6 +264,8 @@ async function refresh(){
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
  const pm=await (await fetch('/api/postmortem',{cache:'no-store'})).json();
  document.getElementById('postmortem').textContent=JSON.stringify(pm,null,2);
+ const storage=await (await fetch('/api/storage',{cache:'no-store'})).json();
+ document.getElementById('storage').textContent=JSON.stringify(storage,null,2);
 }
 refresh(); setInterval(refresh,1500);
 </script>
