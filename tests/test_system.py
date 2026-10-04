@@ -58,6 +58,19 @@ class TestASIBSystem(unittest.TestCase):
         fleet.step()
         self.assertLess(sim.world.nodes["orbital-node-01"].temperature_c, 90)
 
+    def test_robot_service_restores_power_and_network(self):
+        sim = Simulator()
+        node = sim.world.nodes["orbital-node-01"]
+        node.power_pct = 12
+        node.network_ok = False
+        fleet = RobotFleet(sim.world)
+        fleet.enqueue(node.node_id, "inspect-and-service", priority=10)
+        fleet.dispatch()
+        fleet.step()
+        fleet.step()
+        self.assertGreater(node.power_pct, 12)
+        self.assertTrue(node.network_ok)
+
     def test_decision_trace_is_recorded(self):
         sim = Simulator()
         sim.inject_thermal_failure("orbital-node-01", 96)
