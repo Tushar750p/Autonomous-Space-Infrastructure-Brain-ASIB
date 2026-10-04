@@ -99,7 +99,9 @@ class ASIBBrain:
 
         shadow = self.counterfactual.evaluate(world, plan.actions, trace_id)
         shadow_event = None
+        needs_human_review = False
         if plan.actions and not shadow.accepted:
+            needs_human_review = True
             shadow_event = Event(
                 world.tick,
                 "shadow_reject",
@@ -112,6 +114,20 @@ class ASIBBrain:
         else:
             execution_events = self.execute(world, plan.actions, trace_id)
 
+        if world.autonomy_mode == world.autonomy_mode.SAFE and not plan.actions:
+            needs_human_review = True
+
+        review_event = None
+        if needs_human_review:
+            review_event = Event(
+                world.tick,
+                "human_review",
+                "planner",
+                "Human review recommended: autonomous system is holding or rejected its plan",
+                "warning",
+                trace_id=trace_id,
+            )
+
         verified = self.verify(
             world,
             plan.actions if shadow.accepted else [],
@@ -119,7 +135,7 @@ class ASIBBrain:
             trace_id,
         )
 
-        history = observed + ([shadow_event] if shadow_event else []) + execution_events + verified
+        history = observed + ([shadow_event] if shadow_event else []) + ([review_event] if review_event else []) + execution_events + verified
         world.memory.extend(history)
         decision = {
             "trace_id": trace_id,
@@ -131,6 +147,12 @@ class ASIBBrain:
             "verified": [event.message for event in verified],
             "invariants_safe": self.validator.validate(world).safe,
             "shadow": shadow.as_dict(),
+            "decision_class": (
+                "escalate" if needs_human_review
+                else "act" if plan.actions
+                else "hold"
+            ),
+            "needs_human_review": needs_human_review,
         }
         world.decision_log.append(decision)
         world.audit_ledger.append(decision)
