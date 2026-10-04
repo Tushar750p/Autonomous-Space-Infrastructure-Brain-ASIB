@@ -69,6 +69,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
             sim.inject_compute_overload("orbital-node-01", 45)
         elif name == "earth-loss":
             sim.inject_earth_contact_loss()
+        elif name == "robot-failure":
+            runtime.robots.enqueue("orbital-node-01", "inspect-and-service", priority=100)
+            runtime.robots.dispatch()
+            runtime.robots.step()
+            runtime.robots.inject_failure("maintenance-01")
         elif name == "compound":
             sim.inject_thermal_failure("orbital-node-01", 96)
             sim.inject_power_failure("orbital-node-02", 20)
@@ -151,6 +156,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <button onclick="scenario('partition')">Network Partition</button>
 <button onclick="scenario('compound')">Compound</button>
 <button onclick="scenario('earth-loss')">Earth Contact Loss</button>
+<button onclick="scenario('robot-failure')">Robot Failure</button>
 </div>
 
 <div id="kpis" class="grid"></div>
