@@ -10,7 +10,7 @@ class TestExperiments(unittest.TestCase):
 
         self.assertEqual(first, second)
         self.assertTrue(first["deterministic"])
-        self.assertEqual(len(first["scenarios"]), 7)
+        self.assertEqual(len(first["scenarios"]), 9)
         self.assertIn("compound", {item["scenario"] for item in first["scenarios"]})
 
 
