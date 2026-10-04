@@ -40,6 +40,13 @@ class TestASIBSystem(unittest.TestCase):
         network.partition_node(sim.world, "orbital-node-02")
         self.assertFalse(network.is_connected(sim.world, "orbital-node-02", "orbital-node-01"))
 
+    def test_earth_contact_loss_does_not_stop_local_brain(self):
+        sim = Simulator()
+        sim.inject_earth_contact_loss()
+        events = ASIBRuntime(sim).brain.step(sim.world)
+        self.assertTrue(any(e.event_type == "earth_contact" for e in events))
+        self.assertFalse(sim.world.earth_contact_available)
+
     def test_robot_service_simulation(self):
         sim = Simulator()
         sim.world.nodes["orbital-node-01"].temperature_c = 90
