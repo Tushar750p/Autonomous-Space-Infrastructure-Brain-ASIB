@@ -22,12 +22,26 @@ class MultiNodePlanner:
         actions: list[Action] = []
         rationale: list[str] = []
 
+        def local_snapshot(node):
+            return {
+                "node_id": node.node_id,
+                "cpu_capacity": node.cpu_capacity,
+                "cpu_load": node.cpu_load,
+                "temperature_c": node.temperature_c,
+                "power_pct": node.power_pct,
+                "network_ok": node.network_ok,
+                "latency_ms": node.latency_ms,
+                "workload": node.workload,
+                "critical_workload": node.critical_workload,
+                "status": node.status.value,
+            }
+
         def estimate(observer_id: str, node):
             if knowledge is None:
-                return node, 0, 1.0
+                return local_snapshot(node), 0, 1.0
             item = knowledge.estimate(observer_id, node.node_id, world)
             if item.snapshot is None:
-                return node, item.age_ticks, item.confidence
+                return local_snapshot(node), item.age_ticks, item.confidence
             return item.snapshot, item.age_ticks, item.confidence
 
         for source in world.nodes.values():
