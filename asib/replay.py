@@ -29,6 +29,7 @@ class StateReplay:
             "comms_delay_s": world.comms_delay_s,
             "global_power_budget_pct": world.global_power_budget_pct,
             "earth_contact_available": world.earth_contact_available,
+            "environment": world.environment.snapshot(),
             "nodes": {
                 node_id: {
                     "cpu_capacity": node.cpu_capacity,
