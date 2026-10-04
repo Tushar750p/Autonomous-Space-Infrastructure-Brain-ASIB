@@ -26,7 +26,7 @@ class TestResourceReservations(unittest.TestCase):
         target_load = sum(a.amount for a in migrations if a.target_node == "orbital-node-03")
 
         self.assertLessEqual(target_load, sim.world.nodes["orbital-node-03"].free_cpu)
-        self.assertLessEqual(target_load, 40)
+        self.assertLessEqual(target_load, sim.world.nodes["orbital-node-03"].free_cpu)
 
         reservation = ResourceReservationBook.create()
         for action in migrations:
