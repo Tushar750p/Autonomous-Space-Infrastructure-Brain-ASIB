@@ -19,6 +19,7 @@ def run_selftest(ticks: int = 5) -> dict:
     )
     checks["audit_chain"] = runtime.world.audit_ledger.verify()
     checks["replay_journal"] = runtime.replay.validate()
+    checks["forecast_ledger"] = runtime.forecasts.summary()["completed"] >= 0
     checks["safety_invariants"] = SafetyValidator().validate(runtime.world).safe
 
     mission = MissionEvaluator().evaluate(runtime.world)
