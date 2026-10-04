@@ -43,6 +43,7 @@ class Event:
     message: str
     severity: str = "info"
     action: str | None = None
+    trace_id: str | None = None
 
 
 @dataclass
@@ -58,6 +59,9 @@ class Action:
 class World:
     nodes: Dict[str, Node] = field(default_factory=dict)
     memory: List[Event] = field(default_factory=list)
+    telemetry: Dict[str, list] = field(default_factory=dict)
+    decision_log: List[dict] = field(default_factory=list)
+    links: Dict[str, bool] = field(default_factory=dict)
     tick: int = 0
     autonomy_mode: AutonomyMode = AutonomyMode.NORMAL
     comms_delay_s: float = 0.2
