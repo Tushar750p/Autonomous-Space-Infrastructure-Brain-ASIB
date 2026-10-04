@@ -19,6 +19,7 @@ class RuntimeReport:
     state: dict
     memory_entries: int
     knowledge: dict
+    replay_frames: int
 
 
 class ASIBRuntime:
