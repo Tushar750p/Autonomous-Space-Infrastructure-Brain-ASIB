@@ -31,5 +31,6 @@ class HealthService:
             "safety_invariants": invariants.safe,
             "audit_chain": audit_valid,
             "replay_journal": replay_valid,
+            "forecast_calibration": self.runtime.forecasts.summary(),
             "memory_entries": len(world.memory),
         }
