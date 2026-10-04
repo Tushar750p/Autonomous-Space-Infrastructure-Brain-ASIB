@@ -54,6 +54,7 @@ class MultiNodePlanner:
                 continue
 
             movable = max(0.0, source.workload - source.critical_workload)
+            remaining = movable
             targets = []
 
             for candidate in world.nodes.values():
@@ -103,24 +104,27 @@ class MultiNodePlanner:
                 )
                 if self.policy.allow(world, candidate):
                     actions.append(candidate)
+                    remaining = max(0.0, remaining - amount)
                     rationale.append(
                         f"Migrate {amount:.1f} workload from {source.node_id} to {target.node_id} "
                         f"(confidence={confidence:.2f}, age={age}t)"
                     )
 
             if source.temperature_c >= self.policy.THERMAL_CRITICAL or source.power_pct <= self.policy.POWER_CRITICAL:
-                shed_amount = min(movable, 25.0)
+                shed_amount = min(remaining, 25.0)
                 if shed_amount > 0:
                     candidate = Action("shed", source.node_id, amount=shed_amount,
                                        reason="protect node safety margins")
                     if self.policy.allow(world, candidate):
                         actions.append(candidate)
+                        remaining = max(0.0, remaining - shed_amount)
                         rationale.append(
                             f"Shed {shed_amount:.1f} non-critical workload on {source.node_id}"
                         )
 
-            if source.power_pct <= self.policy.POWER_LOW:
-                candidate = Action("reduce_power", source.node_id, amount=15.0,
+            if source.power_pct <= self.policy.POWER_LOW and remaining > 0:
+                power_amount = min(15.0, remaining)
+                candidate = Action("reduce_power", source.node_id, amount=power_amount,
                                    reason="enter power conservation")
                 if self.policy.allow(world, candidate):
                     actions.append(candidate)
