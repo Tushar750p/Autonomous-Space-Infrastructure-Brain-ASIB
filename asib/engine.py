@@ -26,13 +26,14 @@ class ASIBBrain:
         world.autonomy_mode = self.policy.mode_for(world)
         return events
 
-    def execute(self, world: World, actions: list[Action]) -> list[Event]:
+    def execute(self, world: World, actions: list[Action], trace_id: str) -> list[Event]:
         events: list[Event] = []
         for action in actions:
             source = world.nodes[action.source_node]
             if not self.policy.allow(world, action):
                 events.append(Event(world.tick, "blocked_action", source.node_id,
-                                    f"Blocked unsafe action: {action.action_type}", "critical", action.action_type))
+                                    f"Blocked unsafe action: {action.action_type}", "critical",
+                                    action.action_type, trace_id))
                 continue
 
             if action.action_type == "migrate" and action.target_node:
@@ -44,27 +45,30 @@ class ASIBBrain:
                     target.workload += amount
                     target.cpu_load = min(100.0, target.cpu_load + amount)
                     events.append(Event(world.tick, "action", source.node_id,
-                                        f"Migrated {amount:.1f} workload to {target.node_id}", action=action.action_type))
+                                        f"Migrated {amount:.1f} workload to {target.node_id}", action=action.action_type,
+                                        trace_id=trace_id))
             elif action.action_type == "shed":
                 amount = min(action.amount, max(0.0, source.workload - source.critical_workload))
                 source.workload -= amount
                 source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
                 events.append(Event(world.tick, "action", source.node_id,
-                                    f"Shed {amount:.1f} non-critical workload", action=action.action_type))
+                                    f"Shed {amount:.1f} non-critical workload", action=action.action_type,
+                                    trace_id=trace_id))
             elif action.action_type == "reduce_power":
                 amount = min(action.amount, max(0.0, source.workload - source.critical_workload))
                 source.workload -= amount
                 source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
                 events.append(Event(world.tick, "action", source.node_id,
-                                    f"Reduced load by {amount:.1f} for power conservation", action=action.action_type))
+                                    f"Reduced load by {amount:.1f} for power conservation", action=action.action_type,
+                                    trace_id=trace_id))
             elif action.action_type == "isolate":
                 source.status = NodeStatus.ISOLATED
                 events.append(Event(world.tick, "action", source.node_id,
-                                    "Node isolated from coordination", action=action.action_type))
+                                    "Node isolated from coordination", action=action.action_type,
+                                    trace_id=trace_id))
         return events
 
-    def verify(self, world: World, actions: list[Action], execution_events: list[Event]) -> list[Event]:
-        """Verify only actions that actually executed; blocked actions cannot be marked successful."""
+    def verify(self, world: World, actions: list[Action], execution_events: list[Event], trace_id: str) -> list[Event]:
         results: list[Event] = []
         executed_types = {(event.node_id, event.action) for event in execution_events if event.event_type == "action"}
 
@@ -72,7 +76,7 @@ class ASIBBrain:
             if (action.source_node, action.action_type) not in executed_types:
                 results.append(Event(world.tick, "verification", action.source_node,
                                      "Action not verified because execution did not occur",
-                                     "warning", action.action_type))
+                                     "warning", action.action_type, trace_id))
                 continue
 
             node = world.nodes[action.source_node]
@@ -84,15 +88,25 @@ class ASIBBrain:
             results.append(Event(world.tick, "verification", node.node_id,
                                  f"Action verification: {status}",
                                  "info" if safe else "critical",
-                                 action.action_type))
+                                 action.action_type, trace_id))
         return results
 
     def step(self, world: World) -> list[Event]:
+        trace_id = f"T{world.tick + 1:05d}"
         observed = self.observe(world)
         plan = self.planner.plan(world)
-        execution_events = self.execute(world, plan.actions)
-        verified = self.verify(world, plan.actions, execution_events)
+        execution_events = self.execute(world, plan.actions, trace_id)
+        verified = self.verify(world, plan.actions, execution_events, trace_id)
 
         history = observed + execution_events + verified
         world.memory.extend(history)
+        world.decision_log.append({
+            "trace_id": trace_id,
+            "tick": world.tick,
+            "mode": world.autonomy_mode.value,
+            "rationale": plan.rationale,
+            "actions": [action.__dict__ for action in plan.actions],
+            "executed": [event.message for event in execution_events],
+            "verified": [event.message for event in verified],
+        })
         return history
