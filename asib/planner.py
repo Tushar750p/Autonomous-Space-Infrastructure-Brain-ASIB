@@ -18,9 +18,17 @@ class MultiNodePlanner:
         self.policy = policy or SafetyPolicy()
         self.network = NetworkModel()
 
-    def plan(self, world: World) -> Plan:
+    def plan(self, world: World, knowledge=None) -> Plan:
         actions: list[Action] = []
         rationale: list[str] = []
+
+        def estimate(observer_id: str, node):
+            if knowledge is None:
+                return node, 0, 1.0
+            item = knowledge.estimate(observer_id, node.node_id, world)
+            if item.snapshot is None:
+                return node, item.age_ticks, item.confidence
+            return item.snapshot, item.age_ticks, item.confidence
 
         for source in world.nodes.values():
             unhealthy = (
@@ -32,30 +40,56 @@ class MultiNodePlanner:
                 continue
 
             movable = max(0.0, source.workload - source.critical_workload)
-            targets = sorted(
-                (
-                    n for n in world.nodes.values()
-                    if n.node_id != source.node_id
-                    and n.network_ok
-                    and self.network.is_connected(world, source.node_id, n.node_id)
-                    and n.temperature_c < self.policy.THERMAL_DEGRADED
-                    and n.power_pct > self.policy.POWER_LOW
-                    and n.free_cpu >= 5.0
-                ),
-                key=lambda n: (n.temperature_c, -n.free_cpu),
-            )
+            targets = []
+
+            for candidate in world.nodes.values():
+                if candidate.node_id == source.node_id:
+                    continue
+                if not candidate.network_ok or not self.network.is_connected(world, source.node_id, candidate.node_id):
+                    continue
+
+                estimated, age, confidence = estimate(source.node_id, candidate)
+                if confidence < 0.20:
+                    rationale.append(
+                        f"Skip {candidate.node_id} for {source.node_id}: insufficient state confidence"
+                    )
+                    continue
+
+                estimated_temp = float(estimated["temperature_c"])
+                estimated_power = float(estimated["power_pct"])
+                estimated_cpu = float(estimated["cpu_load"])
+                estimated_free_cpu = max(
+                    0.0, float(estimated.get("cpu_capacity", candidate.cpu_capacity)) - estimated_cpu
+                )
+
+                if estimated_temp >= self.policy.THERMAL_DEGRADED or estimated_power <= self.policy.POWER_LOW:
+                    continue
+                if estimated_free_cpu < 5.0 or candidate.free_cpu < 5.0:
+                    continue
+
+                # Uncertain state is deliberately penalized so stale nodes are not
+                # selected merely because they look good in an old snapshot.
+                uncertainty_penalty = (1.0 - confidence) * 20.0
+                score = estimated_temp + uncertainty_penalty - min(estimated_free_cpu, 100.0) * 0.12
+                targets.append((score, age, candidate, confidence))
+
+            targets.sort(key=lambda item: (item[0], -item[3], item[1], item[2].node_id))
 
             if movable > 0 and targets:
-                target = targets[0]
+                _, age, target, confidence = targets[0]
                 amount = min(movable, target.free_cpu, self.policy.MAX_MIGRATION)
                 candidate = Action(
-                    "migrate", source.node_id, target.node_id, amount,
+                    "migrate",
+                    source.node_id,
+                    target.node_id,
+                    amount,
                     "preserve critical workload while relieving an unhealthy node",
                 )
                 if self.policy.allow(world, candidate):
                     actions.append(candidate)
                     rationale.append(
-                        f"Migrate {amount:.1f} workload from {source.node_id} to {target.node_id}"
+                        f"Migrate {amount:.1f} workload from {source.node_id} to {target.node_id} "
+                        f"(confidence={confidence:.2f}, age={age}t)"
                     )
 
             if source.temperature_c >= self.policy.THERMAL_CRITICAL or source.power_pct <= self.policy.POWER_CRITICAL:
