@@ -33,15 +33,20 @@ Infrastructure Memory
 - 💻 Compute/workload modelling
 - 🌡️ Thermal modelling
 - ⚡ Power reserve modelling
-- 📡 Network state + simulated communication delay
-- 💥 Thermal, power, network and compute fault injection
+- 📡 Network topology + simulated communication delay
+- 🌍 Simulated intermittent Earth contact
+- 💥 Thermal, power, network-partition and compute fault injection
 - 🔄 Multi-node workload migration
 - 🧠 Infrastructure event memory and querying
 - 🔮 Transparent risk prediction
 - 🛡️ Safety guardrails for autonomous actions
 - 🎯 Mission-health evaluation
-- 🖥️ Browser control room with live telemetry
-- 🧪 Unit tests + GitHub Actions CI
+- 🖥️ Browser control room with continuous autonomous ticks
+- 🤖 Simulated maintenance-robot fleet
+- 🔮 Trend-aware risk prediction with confidence/horizon
+- 🧾 Decision traces for every autonomous planning cycle
+- 📊 Reproducible compound benchmark
+- 🧪 Unit + system tests + GitHub Actions CI
 - 🐳 Docker + Docker Compose support
 
 ## Run locally
@@ -49,6 +54,7 @@ Infrastructure Memory
 \`\`\`bash
 python -m asib.cli
 python run_asib.py compound
+python run_benchmark.py --ticks 20
 python -m unittest discover -s tests -v
 \`\`\`
 
@@ -94,8 +100,16 @@ asib/
 ├── predictor.py    # transparent risk scoring
 ├── mission.py      # mission health metrics
 ├── comms.py        # delayed communication model
+├── network.py      # node topology and partitions
+├── telemetry.py    # telemetry history
+├── predictor.py    # trend-aware risk prediction
+├── mission.py      # mission health metrics
+├── memory.py       # operational memory
+├── robotics.py     # safe maintenance-robot simulator
+├── runtime.py      # closed-loop autonomous runtime
+├── benchmark.py    # reproducible system benchmark
 ├── scenarios.py    # repeatable fault scenarios
-└── dashboard.py    # local browser control room
+└── dashboard.py    # autonomous browser control room
 \`\`\`
 
 ## Research direction
@@ -110,11 +124,11 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
 **V1 — Earth digital twin:** multi-node autonomy, faults, policies, memory and telemetry ✅
 
-**V1.5 — Physics:** richer thermal/power dynamics, storage, workload classes and stochastic faults
+**V1.5 — Physics + Prediction:** richer thermal/power dynamics, telemetry trends, topology and maintenance-robot simulation ✅
 
-**V2 — Distributed autonomy:** communication partitions, asynchronous planning, node-to-node coordination and uncertainty
+**V2 — Distributed autonomy:** communication partitions, asynchronous planning, uncertainty-aware coordination and benchmarked recovery
 
-**V3 — Robotics testbed:** simulated maintenance robot and hardware-in-the-loop interfaces
+**V3 — Hardware-in-the-loop:** simulated interfaces for future physical testbeds, with strict separation from real mission control
 
 **V4 — Research validation:** formal safety properties, reproducible benchmarks and independent verification
 
