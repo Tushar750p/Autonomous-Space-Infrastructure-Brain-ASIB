@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from .config import ASIBConfig
+
 from .calibration import ForecastLedger
 from .comms import CommunicationModel, Message
 from .distributed import DistributedKnowledge
@@ -10,6 +12,7 @@ from .replay import StateReplay
 from .resources import system_resource_report
 from .robotics import RobotFleet
 from .simulator import Simulator
+from .storage import EventStore
 from .telemetry import TelemetryRecorder
 
 
@@ -45,6 +48,8 @@ class ASIBRuntime:
         self.history: list[Event] = []
         self.replay = StateReplay()
         self.replay.capture(self.world)
+        config = ASIBConfig.from_env()
+        self.store = EventStore(config.store_path) if config.store_path else None
 
     def tick(self) -> RuntimeReport:
         self.simulator.advance_physics()
@@ -71,6 +76,11 @@ class ASIBRuntime:
         self.replay.capture(self.world)
 
         self.world.memory.extend(knowledge_events + robot_events)
+
+        if self.store is not None:
+            self.store.append_events(knowledge_events + brain_events + robot_events)
+            if self.world.decision_log:
+                self.store.append_decision(self.world.decision_log[-1])
 
         return RuntimeReport(
             tick=self.world.tick,
@@ -112,4 +122,9 @@ class ASIBRuntime:
         return reports
 
     def reset(self):
+        if getattr(self, "store", None) is not None:
+            self.store.close()
         self.__init__(Simulator())
+
+    def storage_status(self) -> dict:
+        return self.store.counts() if self.store is not None else {"enabled": False}
