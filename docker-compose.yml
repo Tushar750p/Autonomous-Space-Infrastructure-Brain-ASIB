@@ -7,6 +7,9 @@ services:
       ASIB_HOST: "0.0.0.0"
       ASIB_PORT: "8080"
       ASIB_TICK_INTERVAL_S: "1.0"
+      ASIB_STORE_PATH: "/data/asib.db"
+    volumes:
+      - asib-data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3)"]
       interval: 30s
@@ -14,3 +17,6 @@ services:
       start_period: 10s
       retries: 3
     restart: unless-stopped
+
+volumes:
+  asib-data:
