@@ -5,6 +5,7 @@ from .distributed import DistributedKnowledge
 from .engine import ASIBBrain
 from .models import Event, World
 from .predictor import RiskPredictor
+from .replay import StateReplay
 from .robotics import RobotFleet
 from .simulator import Simulator
 from .telemetry import TelemetryRecorder
@@ -35,6 +36,8 @@ class ASIBRuntime:
         self.robots = RobotFleet(self.world)
         self.inbox: list[Message] = []
         self.history: list[Event] = []
+        self.replay = StateReplay()
+        self.replay.capture(self.world)
 
     def tick(self) -> RuntimeReport:
         self.simulator.advance_physics()
@@ -55,6 +58,7 @@ class ASIBRuntime:
 
         events = knowledge_events + brain_events + robot_events
         self.history.extend(events)
+        self.replay.capture(self.world)
 
         # Brain events are already persisted inside ASIBBrain.step(). Only
         # persist the auxiliary knowledge/robot events here to avoid duplicates.
@@ -67,6 +71,7 @@ class ASIBRuntime:
             state=self.simulator.snapshot(),
             memory_entries=len(self.world.memory),
             knowledge=self.knowledge.summary(self.world),
+            replay_frames=len(self.replay.frames),
         )
 
     def queue_message(self, source: str, destination: str, payload: str):
