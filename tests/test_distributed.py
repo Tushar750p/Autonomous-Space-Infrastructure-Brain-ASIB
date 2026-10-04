@@ -48,3 +48,28 @@ class TestDistributedKnowledge(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_stale_candidate_is_revalidated_before_migration(self):
+        sim = Simulator()
+        sim.inject_comms_delay(5)
+        runtime = ASIBRuntime(sim)
+        sim.world.tick = 1
+        sim.world.nodes["orbital-node-01"].temperature_c = 92
+        sim.world.nodes["orbital-node-02"].temperature_c = 90
+
+        # Node 01 has an old healthy view of node 02. The planner may rank it,
+        # but the execution-time policy must refuse the now-unsafe target.
+        knowledge = runtime.knowledge
+        knowledge.sync(sim.world)
+        plan = runtime.brain.planner.plan(sim.world, knowledge=knowledge)
+        self.assertFalse(
+            any(
+                action.action_type == "migrate" and action.target_node == "orbital-node-02"
+                for action in plan.actions
+            )
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
