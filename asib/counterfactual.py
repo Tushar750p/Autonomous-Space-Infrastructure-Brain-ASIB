@@ -45,11 +45,12 @@ class CounterfactualEvaluator:
         self,
         executor: ActionExecutor | None = None,
         validator: SafetyValidator | None = None,
+        mission: MissionEvaluator | None = None,
     ):
         self.executor = executor or ActionExecutor()
         self.validator = validator or SafetyValidator()
         self.policy = SafetyPolicy()
-        self.mission = MissionEvaluator()
+        self.mission = mission or MissionEvaluator()
 
     def evaluate(
         self,
