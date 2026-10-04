@@ -7,6 +7,7 @@ from .engine import ASIBBrain
 from .models import Event, World
 from .predictor import RiskPredictor
 from .replay import StateReplay
+from .resources import system_resource_report
 from .robotics import RobotFleet
 from .simulator import Simulator
 from .telemetry import TelemetryRecorder
@@ -22,6 +23,8 @@ class RuntimeReport:
     knowledge: dict
     replay_frames: int
     environment: dict
+    resources: dict
+    forecast_calibration: dict
 
 
 class ASIBRuntime:
@@ -67,8 +70,6 @@ class ASIBRuntime:
         self.history.extend(events)
         self.replay.capture(self.world)
 
-        # Brain events are already persisted inside ASIBBrain.step(). Only
-        # persist the auxiliary knowledge/robot events here to avoid duplicates.
         self.world.memory.extend(knowledge_events + robot_events)
 
         return RuntimeReport(
@@ -80,6 +81,8 @@ class ASIBRuntime:
             knowledge=self.knowledge.summary(self.world),
             replay_frames=len(self.replay.frames),
             environment=self.world.environment.snapshot(),
+            resources=system_resource_report(self.world),
+            forecast_calibration=self.forecasts.summary(),
         )
 
     def queue_message(self, source: str, destination: str, payload: str):
