@@ -14,6 +14,7 @@ class TestMissionProfiles(unittest.TestCase):
             power_weight=1,
             critical_service_weight=0,
             network_weight=0,
+            storage_weight=0,
         ).normalized()
         self.assertAlmostEqual(
             profile.availability_weight + profile.thermal_weight +
@@ -33,10 +34,12 @@ class TestMissionProfiles(unittest.TestCase):
                 power_weight=0,
                 critical_service_weight=0,
                 network_weight=0,
+                storage_weight=1,
             )
         ).evaluate(sim.world)
 
         self.assertEqual(thermal_only["profile"], "thermal-only")
+        self.assertIn("storage_health_pct", thermal_only)
         self.assertNotEqual(thermal_only["score"], default_score)
 
     def test_runtime_passes_profile_into_brain(self):
