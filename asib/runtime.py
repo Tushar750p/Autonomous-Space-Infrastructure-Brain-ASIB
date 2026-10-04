@@ -7,7 +7,7 @@ from .comms import CommunicationModel, Message
 from .distributed import DistributedKnowledge
 from .engine import ASIBBrain
 from .models import Event, World
-from .mission import MissionProfile
+from .mission import MissionEvaluator, MissionProfile
 from .predictor import RiskPredictor
 from .replay import StateReplay
 from .resources import system_resource_report
@@ -29,6 +29,7 @@ class RuntimeReport:
     environment: dict
     resources: dict = field(default_factory=dict)
     forecast_calibration: dict = field(default_factory=dict)
+    mission: dict = field(default_factory=dict)
 
 
 class ASIBRuntime:
@@ -38,6 +39,7 @@ class ASIBRuntime:
         self.simulator = simulator or Simulator()
         self.world: World = self.simulator.world
         self.brain = ASIBBrain(mission_profile)
+        self.mission = MissionEvaluator(mission_profile)
         self.predictor = RiskPredictor()
         self.forecasts = ForecastLedger()
         self.telemetry = TelemetryRecorder()
@@ -94,6 +96,7 @@ class ASIBRuntime:
             environment=self.world.environment.snapshot(),
             resources=system_resource_report(self.world),
             forecast_calibration=self.forecasts.summary(),
+            mission=self.mission.evaluate(self.world),
         )
 
     def queue_message(self, source: str, destination: str, payload: str):
