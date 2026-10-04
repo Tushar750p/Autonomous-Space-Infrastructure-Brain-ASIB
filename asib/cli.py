@@ -1,3 +1,4 @@
+from . import __version__
 from .engine import ASIBBrain
 from .simulator import Simulator
 
@@ -6,7 +7,7 @@ def main():
     sim = Simulator()
     brain = ASIBBrain()
 
-    print("ASIB V1.0 — Autonomous Space Infrastructure Brain")
+    print(f"ASIB {__version__} — Autonomous Space Infrastructure Brain")
     print("Earth-based digital-twin testbed\n")
 
     print("Initial state")
