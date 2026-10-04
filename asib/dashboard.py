@@ -1,114 +1,173 @@
 import json
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from .engine import ASIBBrain
 from .mission import MissionEvaluator
 from .predictor import RiskPredictor
+from .runtime import ASIBRuntime
 from .simulator import Simulator
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    simulator = Simulator()
-    brain = ASIBBrain()
+    runtime = ASIBRuntime()
+    lock = threading.Lock()
 
     def json_response(self, payload, status=200):
-        body = json.dumps(payload, indent=2).encode()
+        body = json.dumps(payload, indent=2, default=str).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    @classmethod
+    def state(cls):
+        rt = cls.runtime
+        world = rt.world
+        return {
+            "tick": world.tick,
+            "autonomy_mode": world.autonomy_mode.value,
+            "comms_delay_s": world.comms_delay_s,
+            "nodes": rt.simulator.snapshot(),
+            "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
+            "mission": MissionEvaluator().evaluate(world),
+            "memory_entries": len(world.memory),
+            "robots": {k: v.__dict__ for k, v in rt.robots.robots.items()},
+            "last_decision": world.decision_log[-1] if world.decision_log else None,
+        }
+
+    @classmethod
+    def apply_injection(cls, name: str):
+        rt = cls.runtime
+        sim = rt.simulator
+        if name == "thermal":
+            sim.inject_thermal_failure("orbital-node-01", 96)
+        elif name == "power":
+            sim.inject_power_failure("orbital-node-02", 12)
+        elif name == "network":
+            sim.world.nodes["orbital-node-03"].critical_workload = 0
+            sim.inject_network_failure("orbital-node-03")
+        elif name == "partition":
+            sim.inject_network_partition("orbital-node-02")
+        elif name == "compute":
+            sim.inject_compute_overload("orbital-node-01", 45)
+        elif name == "compound":
+            sim.inject_thermal_failure("orbital-node-01", 96)
+            sim.inject_power_failure("orbital-node-02", 20)
+            sim.world.nodes["orbital-node-03"].critical_workload = 0
+            sim.inject_network_failure("orbital-node-03")
+            sim.inject_network_partition("orbital-node-02")
+            sim.inject_comms_delay(12.0)
+        else:
+            raise ValueError("unknown scenario")
 
     def do_GET(self):
         parsed = urlparse(self.path)
 
         if parsed.path == "/api/state":
-            world = self.simulator.world
-            payload = {
-                "tick": world.tick,
-                "autonomy_mode": world.autonomy_mode.value,
-                "comms_delay_s": world.comms_delay_s,
-                "nodes": self.simulator.snapshot(),
-                "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
-                "mission": MissionEvaluator().evaluate(world),
-                "memory_entries": len(world.memory),
-            }
-            return self.json_response(payload)
+            with self.lock:
+                return self.json_response(self.state())
+
+        if parsed.path == "/api/tick":
+            with self.lock:
+                report = self.runtime.tick()
+                return self.json_response(report.__dict__)
+
+        if parsed.path == "/api/reset":
+            with self.lock:
+                self.runtime.reset()
+                return self.json_response(self.state())
 
         if parsed.path == "/api/scenario":
             name = parse_qs(parsed.query).get("name", ["compound"])[0]
-            if name not in {"thermal", "power", "network", "compound"}:
+            try:
+                with self.lock:
+                    self.apply_injection(name)
+                    report = self.runtime.tick()
+                    return self.json_response(report.__dict__)
+            except ValueError:
                 return self.json_response({"error": "unknown scenario"}, 400)
-            if name == "thermal":
-                self.simulator.inject_thermal_failure("orbital-node-01", 96)
-            elif name == "power":
-                self.simulator.inject_power_failure("orbital-node-01", 12)
-            elif name == "network":
-                self.simulator.world.nodes["orbital-node-03"].critical_workload = 0
-                self.simulator.inject_network_failure("orbital-node-03")
-            elif name == "compound":
-                self.simulator.inject_thermal_failure("orbital-node-01", 96)
-                self.simulator.inject_power_failure("orbital-node-02", 20)
-                self.simulator.world.nodes["orbital-node-03"].critical_workload = 0
-                self.simulator.inject_network_failure("orbital-node-03")
-                self.simulator.inject_comms_delay(12.0)
-
-            events = self.brain.step(self.simulator.world)
-            return self.json_response({
-                "scenario": name,
-                "events": [event.__dict__ for event in events],
-                "state": self.simulator.snapshot(),
-            })
 
         html = """<!doctype html>
 <html>
-<head><meta charset="utf-8"><title>ASIB Control Room</title>
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASIB Control Room</title>
 <style>
-body{font-family:system-ui;margin:0;background:#080d18;color:#eaf0ff}
-main{max-width:1200px;margin:auto;padding:28px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-.card{background:#10192b;border:1px solid #263653;border-radius:14px;padding:18px}
-button{padding:10px 14px;margin:4px;border:0;border-radius:8px;cursor:pointer}
-.badge{font-weight:700}
-pre{white-space:pre-wrap;overflow:auto}
-h1{margin-bottom:4px}
-small{opacity:.7}
-</style></head>
+:root{font-family:Inter,system-ui,-apple-system,sans-serif}
+body{margin:0;background:#070b14;color:#edf3ff}
+main{max-width:1400px;margin:auto;padding:26px}
+.header{display:flex;justify-content:space-between;gap:20px;align-items:end;flex-wrap:wrap}
+h1{margin:0 0 6px;font-size:30px}.muted{opacity:.65}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:16px 0}
+.card{background:#0f1728;border:1px solid #263754;border-radius:14px;padding:16px}
+.kpi{font-size:26px;font-weight:750;margin-top:5px}
+button{background:#1a2740;color:#fff;border:1px solid #324666;border-radius:8px;padding:9px 12px;margin:4px;cursor:pointer}
+button:hover{filter:brightness(1.15)}
+pre{white-space:pre-wrap;overflow:auto;max-height:420px;font-size:12px}
+.status{font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
+.good{font-weight:700}.warn{font-weight:700}
+</style>
+</head>
 <body><main>
-<h1>ASIB Control Room</h1>
-<small>Autonomous Space Infrastructure Brain · Earth-based research testbed</small>
+<div class="header">
+<div><h1>🛰️ ASIB Control Room</h1><div class="muted">Autonomous Space Infrastructure Brain · Earth-based research testbed</div></div>
+<div><button onclick="call('/api/tick')">Run Tick</button><button onclick="call('/api/reset')">Reset</button></div>
+</div>
+
 <div class="card">
-<b>Fault injection</b><br>
+<b>Fault Injection / Research Scenarios</b><br>
 <button onclick="scenario('thermal')">Thermal</button>
 <button onclick="scenario('power')">Power</button>
+<button onclick="scenario('compute')">Compute</button>
 <button onclick="scenario('network')">Network</button>
+<button onclick="scenario('partition')">Network Partition</button>
 <button onclick="scenario('compound')">Compound</button>
 </div>
-<div id="summary" class="grid"></div>
-<div class="card"><h3>Node State</h3><pre id="nodes">Loading...</pre></div>
-<div class="card"><h3>Risk Prediction</h3><pre id="risks">Loading...</pre></div>
-<div class="card"><h3>Mission Health</h3><pre id="mission">Loading...</pre></div>
+
+<div id="kpis" class="grid"></div>
+
+<div class="card"><h3>Node Telemetry</h3><div id="nodeTable"></div></div>
+<div class="grid">
+<div class="card"><h3>Risk Forecast</h3><pre id="risks">Loading...</pre></div>
+<div class="card"><h3>Robot Fleet</h3><pre id="robots">Loading...</pre></div>
+</div>
+<div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
+
 <script>
-async function refresh(){
- const d=await (await fetch('/api/state')).json();
- document.getElementById('summary').innerHTML =
-   '<div class="card"><b>Mode</b><br><span class="badge">'+d.autonomy_mode+'</span></div>'+
-   '<div class="card"><b>Tick</b><br>'+d.tick+'</div>'+
-   '<div class="card"><b>Memory</b><br>'+d.memory_entries+' events</div>'+
-   '<div class="card"><b>Mission Score</b><br>'+d.mission.score+'/100</div>';
- document.getElementById('nodes').textContent=JSON.stringify(d.nodes,null,2);
- document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
- document.getElementById('mission').textContent=JSON.stringify(d.mission,null,2);
+async function call(url){
+  const r=await fetch(url); const d=await r.json();
+  await refresh(); return d;
 }
-async function scenario(name){
- await fetch('/api/scenario?name='+encodeURIComponent(name));
- await refresh();
+async function scenario(name){ await call('/api/scenario?name='+encodeURIComponent(name)); }
+function esc(x){return String(x).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+async function refresh(){
+ const d=await (await fetch('/api/state',{cache:'no-store'})).json();
+ document.getElementById('kpis').innerHTML =
+ '<div class="card"><div class="muted">Autonomy mode</div><div class="kpi">'+esc(d.autonomy_mode)+'</div></div>'+
+ '<div class="card"><div class="muted">Simulation tick</div><div class="kpi">'+d.tick+'</div></div>'+
+ '<div class="card"><div class="muted">Mission score</div><div class="kpi">'+d.mission.score+'/100</div></div>'+
+ '<div class="card"><div class="muted">Memory events</div><div class="kpi">'+d.memory_entries+'</div></div>'+
+ '<div class="card"><div class="muted">Comms delay</div><div class="kpi">'+d.comms_delay_s+'s</div></div>';
+
+ let rows='<table><tr><th>Node</th><th>Temp</th><th>Power</th><th>CPU</th><th>Workload</th><th>Network</th><th>Status</th></tr>';
+ for(const [id,n] of Object.entries(d.nodes)){
+   rows+='<tr><td>'+esc(id)+'</td><td>'+n.temperature_c+'°C</td><td>'+n.power_pct+'%</td><td>'+n.cpu_load+'%</td><td>'+n.workload+'</td><td>'+ (n.network_ok?'UP':'DOWN') +'</td><td class="status">'+esc(n.status)+'</td></tr>';
+ }
+ document.getElementById('nodeTable').innerHTML=rows+'</table>';
+ document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
+ document.getElementById('robots').textContent=JSON.stringify(d.robots,null,2);
+ document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
 }
 refresh(); setInterval(refresh,1500);
 </script>
 </main></body></html>"""
+
         body = html.encode()
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -116,9 +175,22 @@ refresh(); setInterval(refresh,1500);
         self.wfile.write(body)
 
 
-def run(host="127.0.0.1", port=8080):
+def _autonomous_loop(interval_s: float):
+    while True:
+        time.sleep(interval_s)
+        try:
+            with DashboardHandler.lock:
+                DashboardHandler.runtime.tick()
+        except Exception:
+            # The dashboard must remain available if a simulation step fails.
+            pass
+
+
+def run(host="127.0.0.1", port=8080, interval_s=1.0):
+    thread = threading.Thread(target=_autonomous_loop, args=(interval_s,), daemon=True)
+    thread.start()
     print(f"ASIB dashboard: http://{host}:{port}")
-    HTTPServer((host, port), DashboardHandler).serve_forever()
+    ThreadingHTTPServer((host, port), DashboardHandler).serve_forever()
 
 
 if __name__ == "__main__":
