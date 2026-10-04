@@ -1,6 +1,6 @@
 from .action_executor import ActionExecutor
 from .counterfactual import CounterfactualEvaluator
-from .models import Action, Event, NodeStatus, World
+from .models import Action, AutonomyMode, Event, NodeStatus, World
 from .planner import MultiNodePlanner
 from .policy import SafetyPolicy
 from .validation import SafetyValidator
@@ -114,7 +114,7 @@ class ASIBBrain:
         else:
             execution_events = self.execute(world, plan.actions, trace_id)
 
-        if world.autonomy_mode == world.autonomy_mode.SAFE and not plan.actions:
+        if world.autonomy_mode == AutonomyMode.SAFE and not plan.actions:
             needs_human_review = True
 
         review_event = None
