@@ -84,6 +84,8 @@ class MultiNodePlanner:
                     target.node_id,
                     amount,
                     "preserve critical workload while relieving an unhealthy node",
+                    age,
+                    confidence,
                 )
                 if self.policy.allow(world, candidate):
                     actions.append(candidate)
