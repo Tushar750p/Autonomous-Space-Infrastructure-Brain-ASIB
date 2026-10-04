@@ -6,6 +6,7 @@ from pathlib import Path
 from .audit import DecisionLedger
 from .environment import OrbitalEnvironment
 from .models import AutonomyMode, Event, Node, NodeStatus, World
+from .telemetry import TelemetrySample
 
 
 FORMAT_VERSION = 1
@@ -21,7 +22,14 @@ def export_world(world: World) -> dict:
         "global_power_budget_pct": world.global_power_budget_pct,
         "earth_contact_available": world.earth_contact_available,
         "links": dict(world.links),
-        "environment": world.environment.snapshot(),
+        "environment": {
+            **world.environment.__dict__,
+            **world.environment.snapshot(),
+        },
+        "telemetry": {
+            node_id: [sample.__dict__ for sample in history]
+            for node_id, history in world.telemetry.items()
+        },
         "nodes": {
             node_id: {
                 "node_id": node.node_id,
@@ -49,9 +57,22 @@ def restore_world(payload: dict) -> World:
         raise ValueError("Unsupported ASIB checkpoint format")
 
     environment_data = payload.get("environment", {})
-    environment = OrbitalEnvironment(
-        phase_deg=float(environment_data.get("phase_deg", 0.0)),
-    )
+    environment_fields = {
+        "phase_deg",
+        "angular_rate_deg_per_tick",
+        "eclipse_start_deg",
+        "eclipse_end_deg",
+        "sunlit_generation_pct",
+        "eclipse_generation_pct",
+        "sunlit_cooling_bias_c",
+        "eclipse_cooling_bias_c",
+    }
+    environment_kwargs = {
+        key: float(environment_data[key])
+        for key in environment_fields
+        if key in environment_data
+    }
+    environment = OrbitalEnvironment(**environment_kwargs)
 
     nodes = {}
     for node_id, data in payload.get("nodes", {}).items():
@@ -83,9 +104,25 @@ def restore_world(payload: dict) -> World:
         for event in payload.get("memory", [])
     ]
 
+    telemetry = {
+        node_id: [
+            TelemetrySample(
+                tick=int(sample["tick"]),
+                temperature_c=float(sample["temperature_c"]),
+                power_pct=float(sample["power_pct"]),
+                cpu_load=float(sample["cpu_load"]),
+                workload=float(sample["workload"]),
+                network_ok=bool(sample["network_ok"]),
+            )
+            for sample in history
+        ]
+        for node_id, history in payload.get("telemetry", {}).items()
+    }
+
     return World(
         nodes=nodes,
         memory=memory,
+        telemetry=telemetry,
         decision_log=list(payload.get("decision_log", [])),
         links=dict(payload.get("links", {})),
         tick=int(payload.get("tick", 0)),
