@@ -11,6 +11,8 @@ class TestOrbitalEnvironment(unittest.TestCase):
         env.advance()
         self.assertFalse(env.in_eclipse)
         env.advance()
+        self.assertFalse(env.in_eclipse)
+        env.advance()
         self.assertTrue(env.in_eclipse)
 
     def test_eclipse_reduces_generation_and_raises_thermal_bias(self):
