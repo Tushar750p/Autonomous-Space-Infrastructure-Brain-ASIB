@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from .models import Action, AutonomyMode, World
 from .network import NetworkModel
 from .policy import SafetyPolicy
+from .resources import ResourceReservationBook
 
 
 @dataclass
@@ -21,6 +22,7 @@ class MultiNodePlanner:
     def plan(self, world: World, knowledge=None) -> Plan:
         actions: list[Action] = []
         rationale: list[str] = []
+        reservations = ResourceReservationBook.create()
 
         def local_snapshot(node):
             return {
@@ -79,7 +81,7 @@ class MultiNodePlanner:
 
                 if estimated_temp >= self.policy.THERMAL_DEGRADED or estimated_power <= self.policy.POWER_LOW:
                     continue
-                if estimated_free_cpu < 5.0 or candidate.free_cpu < 5.0:
+                if estimated_free_cpu < 5.0 or reservations.available_cpu(candidate.node_id, candidate) < 5.0:
                     continue
 
                 # Uncertain state is deliberately penalized so stale nodes are not
@@ -92,7 +94,12 @@ class MultiNodePlanner:
 
             if movable > 0 and targets:
                 _, age, target, confidence = targets[0]
-                amount = min(movable, target.free_cpu, self.policy.MAX_MIGRATION)
+                amount = min(
+                    movable,
+                    target.free_cpu,
+                    reservations.available_cpu(target.node_id, target),
+                    self.policy.MAX_MIGRATION,
+                )
                 candidate = Action(
                     "migrate",
                     source.node_id,
@@ -102,7 +109,7 @@ class MultiNodePlanner:
                     age,
                     confidence,
                 )
-                if self.policy.allow(world, candidate):
+                if self.policy.allow(world, candidate) and reservations.reserve_cpu(target.node_id, target, amount):
                     actions.append(candidate)
                     remaining = max(0.0, remaining - amount)
                     rationale.append(
