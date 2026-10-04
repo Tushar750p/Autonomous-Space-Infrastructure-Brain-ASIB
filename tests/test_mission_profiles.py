@@ -19,7 +19,7 @@ class TestMissionProfiles(unittest.TestCase):
         self.assertAlmostEqual(
             profile.availability_weight + profile.thermal_weight +
             profile.power_weight + profile.critical_service_weight +
-            profile.network_weight,
+            profile.network_weight + profile.storage_weight,
             1.0,
         )
 
@@ -34,7 +34,7 @@ class TestMissionProfiles(unittest.TestCase):
                 power_weight=0,
                 critical_service_weight=0,
                 network_weight=0,
-                storage_weight=1,
+                storage_weight=0,
             )
         ).evaluate(sim.world)
 
