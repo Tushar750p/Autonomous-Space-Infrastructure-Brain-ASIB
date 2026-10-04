@@ -21,6 +21,7 @@ class MissionProfile:
     power_weight: float = 0.20
     critical_service_weight: float = 0.10
     network_weight: float = 0.10
+    storage_weight: float = 0.0
 
     def normalized(self) -> "MissionProfile":
         weights = [
@@ -29,6 +30,7 @@ class MissionProfile:
             self.power_weight,
             self.critical_service_weight,
             self.network_weight,
+            self.storage_weight,
         ]
         if any(weight < 0 for weight in weights):
             raise ValueError("Mission weights must be non-negative")
@@ -42,6 +44,7 @@ class MissionProfile:
             power_weight=self.power_weight / total,
             critical_service_weight=self.critical_service_weight / total,
             network_weight=self.network_weight / total,
+            storage_weight=self.storage_weight / total,
         )
 
 
@@ -60,6 +63,7 @@ class MissionEvaluator:
                 "power_health_pct": 0.0,
                 "critical_service_pct": 0.0,
                 "network_health_pct": 0.0,
+                "storage_health_pct": 0.0,
                 "score": 0.0,
             }
 
@@ -80,12 +84,17 @@ class MissionEvaluator:
             for n in world.nodes.values()
         )
         power = sum(max(0.0, min(100.0, n.power_pct)) for n in world.nodes.values())
+        storage_health = sum(
+            max(0.0, min(100.0, 100.0 - n.storage_pct))
+            for n in world.nodes.values()
+        )
 
         availability = 100.0 * nominal / count
         thermal_health = thermal / count
         power_health = power / count
         critical_service = 100.0 * serviceable / count
         network_health = 100.0 * network_healthy / count
+        storage_health_pct = storage_health / count
 
         p = self.profile
         score = (
@@ -94,6 +103,7 @@ class MissionEvaluator:
             + p.power_weight * power_health
             + p.critical_service_weight * critical_service
             + p.network_weight * network_health
+            + p.storage_weight * storage_health_pct
         )
 
         return {
@@ -103,5 +113,6 @@ class MissionEvaluator:
             "power_health_pct": round(power_health, 2),
             "critical_service_pct": round(critical_service, 2),
             "network_health_pct": round(network_health, 2),
+            "storage_health_pct": round(storage_health_pct, 2),
             "score": round(max(0.0, min(100.0, score)), 2),
         }
