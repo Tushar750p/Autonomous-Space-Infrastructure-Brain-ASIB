@@ -80,8 +80,15 @@ class CounterfactualEvaluator:
                 future_sim.advance_physics()
 
                 operationally_safe = self.validator.validate(shadow).safe
+                tracked = {
+                    node_id
+                    for action in actions
+                    for node_id in (action.source_node, action.target_node)
+                    if node_id is not None
+                }
                 if operationally_safe:
-                    for node in shadow.nodes.values():
+                    for node_id in tracked:
+                        node = shadow.nodes[node_id]
                         if node.temperature_c >= self.policy.THERMAL_CRITICAL:
                             operationally_safe = False
                             break
@@ -91,7 +98,7 @@ class CounterfactualEvaluator:
                         if (
                             node.network_ok
                             and node.power_pct <= migration_power_floor(shadow)
-                            and node.workload > 0
+                            and node.workload > node.critical_workload
                         ):
                             operationally_safe = False
                             break
