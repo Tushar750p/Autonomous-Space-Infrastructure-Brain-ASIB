@@ -1,5 +1,6 @@
 from .mission import MissionEvaluator
 from .runtime import ASIBRuntime
+from .scorecard import RecoveryScorecardBuilder
 from .simulator import Simulator
 
 
@@ -45,6 +46,7 @@ def run_compound_benchmark(ticks: int = 20) -> dict:
             recovery_tick = report.tick
 
     final = evaluator.evaluate(sim.world)
+    scorecard = RecoveryScorecardBuilder.build(reports, recovery_tick)
     return {
         "ticks": ticks,
         "initial_score": initial_score,
@@ -54,6 +56,7 @@ def run_compound_benchmark(ticks: int = 20) -> dict:
         "recovery_tick": recovery_tick,
         "action_count": action_count,
         "unsafe_event_count": unsafe_event_count,
+        "recovery_scorecard": scorecard.as_dict(),
         "memory_entries": len(sim.world.memory),
         "knowledge_summary": runtime.knowledge.summary(sim.world),
         "robot_states": {k: v.__dict__ for k, v in runtime.robots.robots.items()},
