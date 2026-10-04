@@ -5,21 +5,33 @@ from .network import NetworkModel
 class Simulator:
     """Deterministic Earth-based digital twin for ASIB development."""
 
-    def __init__(self):
-        self.world = World(nodes={
-            "orbital-node-01": Node(
-                "orbital-node-01", cpu_load=45, temperature_c=50,
-                power_pct=78, workload=70, critical_workload=25
-            ),
-            "orbital-node-02": Node(
-                "orbital-node-02", cpu_load=35, temperature_c=48,
-                power_pct=75, workload=55, critical_workload=15
-            ),
-            "orbital-node-03": Node(
-                "orbital-node-03", cpu_load=20, temperature_c=42,
-                power_pct=88, workload=35, critical_workload=10
-            ),
-        })
+    def __init__(self, node_count: int = 3):
+        if node_count < 1:
+            raise ValueError("node_count must be at least 1")
+
+        nodes = {}
+        presets = (
+            dict(cpu_load=45, temperature_c=50, power_pct=78, workload=70, critical_workload=25),
+            dict(cpu_load=35, temperature_c=48, power_pct=75, workload=55, critical_workload=15),
+            dict(cpu_load=20, temperature_c=42, power_pct=88, workload=35, critical_workload=10),
+        )
+
+        for index in range(1, node_count + 1):
+            if index <= len(presets):
+                values = presets[index - 1]
+            else:
+                values = {
+                    "cpu_load": 30.0 + (index * 7) % 35,
+                    "temperature_c": 42.0 + (index * 3) % 15,
+                    "power_pct": 65.0 + (index * 11) % 30,
+                    "workload": 45.0 + (index * 13) % 35,
+                    "critical_workload": 10.0 + (index % 3) * 5.0,
+                }
+
+            node_id = f"orbital-node-{index:02d}"
+            nodes[node_id] = Node(node_id, **values)
+
+        self.world = World(nodes=nodes)
         NetworkModel().ensure_full_mesh(self.world)
 
     def inject_thermal_failure(self, node_id: str, temperature_c: float = 92.0):
