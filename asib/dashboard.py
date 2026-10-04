@@ -12,6 +12,7 @@ from .mission import MissionEvaluator
 from .postmortem import PostmortemService
 from .predictor import RiskPredictor
 from .runtime import ASIBRuntime
+from .robustness import run_robustness_suite
 from .resources import system_resource_report
 from .simulator import Simulator
 
@@ -137,6 +138,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with self.lock:
                 return self.json_response(self.runtime.storage_status())
 
+        if parsed.path == "/api/robustness":
+            query = parse_qs(parsed.query)
+            ticks = int(query.get("ticks", ["5"])[0])
+            trials = int(query.get("trials", ["5"])[0])
+            if ticks < 1 or ticks > 100 or trials < 1 or trials > 50:
+                return self.json_response({"error": "ticks must be in [1, 100] and trials in [1, 50]"}, 400)
+            return self.json_response(run_robustness_suite(ticks=ticks, trials=trials))
+
         if parsed.path == "/api/tick":
             with self.lock:
                 report = self.runtime.tick()
@@ -190,7 +199,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <body><main>
 <div class="header">
 <div><h1>🛰️ ASIB Control Room</h1><div class="muted">Autonomous Space Infrastructure Brain · Earth-based research testbed</div></div>
-<div><button onclick="call('/api/tick')">Run Tick</button><button onclick="call('/api/reset')">Reset</button><button onclick="runExperiments()">Validation Suite</button></div>
+<div><button onclick="call('/api/tick')">Run Tick</button><button onclick="call('/api/reset')">Reset</button><button onclick="runExperiments()">Validation Suite</button><button onclick="runRobustness()">Robustness</button></div>
 </div>
 
 <div class="card">
@@ -232,6 +241,10 @@ async function call(url){
 async function scenario(name){ await call('/api/scenario?name='+encodeURIComponent(name)); }
 async function runExperiments(){
   const d=await (await fetch('/api/experiments?ticks=10')).json();
+  document.getElementById('experiments').textContent=JSON.stringify(d,null,2);
+}
+async function runRobustness(){
+  const d=await (await fetch('/api/robustness?ticks=5&trials=5')).json();
   document.getElementById('experiments').textContent=JSON.stringify(d,null,2);
 }
 function esc(x){return String(x).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
