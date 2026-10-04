@@ -1,6 +1,7 @@
 from .models import Action, Event, NodeStatus, World
 from .planner import MultiNodePlanner
 from .policy import SafetyPolicy
+from .validation import SafetyValidator
 
 
 class ASIBBrain:
@@ -9,6 +10,7 @@ class ASIBBrain:
     def __init__(self):
         self.policy = SafetyPolicy()
         self.planner = MultiNodePlanner(self.policy)
+        self.validator = SafetyValidator()
 
     def observe(self, world: World) -> list[Event]:
         events: list[Event] = []
@@ -70,15 +72,28 @@ class ASIBBrain:
                                     f"Reduced load by {amount:.1f} for power conservation", action=action.action_type,
                                     trace_id=trace_id))
             elif action.action_type == "isolate":
+                source.network_ok = False
                 source.status = NodeStatus.ISOLATED
                 events.append(Event(world.tick, "action", source.node_id,
                                     "Node isolated from coordination", action=action.action_type,
                                     trace_id=trace_id))
+
+        report = self.validator.validate(world)
+        for violation in report.violations:
+            events.append(Event(
+                world.tick,
+                "invariant_violation",
+                violation.node_id,
+                f"{violation.invariant}: {violation.message}",
+                "critical",
+                trace_id=trace_id,
+            ))
         return events
 
     def verify(self, world: World, actions: list[Action], execution_events: list[Event], trace_id: str) -> list[Event]:
         results: list[Event] = []
         executed_types = {(event.node_id, event.action) for event in execution_events if event.event_type == "action"}
+        invariant_report = self.validator.validate(world)
 
         for action in actions:
             if (action.source_node, action.action_type) not in executed_types:
@@ -91,6 +106,7 @@ class ASIBBrain:
             safe = node.temperature_c < self.policy.THERMAL_CRITICAL and node.power_pct > self.policy.POWER_CRITICAL
             if action.action_type == "migrate" and action.target_node:
                 safe = safe and world.nodes[action.target_node].cpu_load <= 100.0
+            safe = safe and invariant_report.safe
 
             status = "verified" if safe else "not_verified"
             results.append(Event(world.tick, "verification", node.node_id,
@@ -116,5 +132,6 @@ class ASIBBrain:
             "actions": [action.__dict__ for action in plan.actions],
             "executed": [event.message for event in execution_events],
             "verified": [event.message for event in verified],
+            "invariants_safe": self.validator.validate(world).safe,
         })
         return history
