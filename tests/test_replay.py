@@ -19,6 +19,22 @@ class TestReplay(unittest.TestCase):
         self.assertEqual(restored.export(), runtime.replay.export())
         self.assertTrue(restored.validate())
 
+    def test_replay_detects_state_tampering(self):
+        runtime = ASIBRuntime()
+        runtime.run(2)
+        payload = runtime.replay.export()
+        payload[1]["state"]["earth_contact_available"] = False
+        tampered = StateReplay.from_json(__import__("json").dumps(payload))
+        self.assertFalse(tampered.validate())
+        self.assertNotEqual(
+            tampered.frames[1].digest,
+            StateReplay._digest(
+                tampered.frames[1].tick,
+                tampered.frames[1].state,
+                tampered.frames[1].previous_digest,
+            ),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
