@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from .action_executor import ActionExecutor
 from .models import Action, Event, World
 from .policy import SafetyPolicy
 from .validation import SafetyValidator
@@ -41,6 +42,7 @@ class SimulationHardwareAdapter:
     def __init__(self):
         self.policy = SafetyPolicy()
         self.validator = SafetyValidator()
+        self.executor = ActionExecutor(self.policy, self.validator)
 
     def read(self, world: World) -> list[HardwareReading]:
         return [
@@ -56,56 +58,15 @@ class SimulationHardwareAdapter:
         ]
 
     def apply(self, world: World, action: Action, trace_id: str) -> ActuationResult:
-        if not self.policy.allow(world, action):
-            return ActuationResult(
-                accepted=False,
-                events=[Event(
-                    world.tick,
-                    "adapter_reject",
-                    action.source_node,
-                    f"Adapter rejected unsafe action: {action.action_type}",
-                    "critical",
-                    action.action_type,
-                    trace_id,
-                )],
-                reason="safety policy rejected command",
-            )
-
-        # This adapter deliberately supports only the simulator's non-physical
-        # state mutations. A future physical adapter must be implemented
-        # separately and independently qualified.
-        source = world.nodes[action.source_node]
-        if action.action_type == "shed":
-            amount = min(action.amount, max(0.0, source.workload - source.critical_workload))
-            source.workload -= amount
-            source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
-        elif action.action_type == "reduce_power":
-            amount = min(action.amount, max(0.0, source.workload - source.critical_workload))
-            source.workload -= amount
-            source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
-        elif action.action_type == "migrate" and action.target_node:
-            target = world.nodes[action.target_node]
-            amount = min(action.amount, max(0.0, source.workload - source.critical_workload), target.free_cpu)
-            if amount <= 0:
-                return ActuationResult(False, [], "no transferable workload")
-            source.workload -= amount
-            source.cpu_load = max(source.critical_workload, source.cpu_load - amount)
-            target.workload += amount
-            target.cpu_load = min(100.0, target.cpu_load + amount)
-        elif action.action_type == "isolate":
-            source.network_ok = False
-
-        safe = self.validator.validate(world).safe
-        event = Event(
-            world.tick,
-            "adapter_apply",
-            source.node_id,
-            f"Simulation adapter {'accepted' if safe else 'applied then flagged'} {action.action_type}",
-            "info" if safe else "critical",
-            action.action_type,
-            trace_id,
+        events = self.executor.execute(world, [action], trace_id)
+        accepted = any(event.event_type == "action" for event in events) and not any(
+            event.event_type in {"blocked_action", "invariant_violation"} for event in events
         )
-        return ActuationResult(safe, [event], "" if safe else "post-action invariant violation")
+        return ActuationResult(
+            accepted=accepted,
+            events=events,
+            reason="" if accepted else "safety or execution guard rejected command",
+        )
 
 
 class HardwareInLoopHarness:
