@@ -30,6 +30,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "tick": world.tick,
             "autonomy_mode": world.autonomy_mode.value,
             "comms_delay_s": world.comms_delay_s,
+            "earth_contact_available": world.earth_contact_available,
             "nodes": rt.simulator.snapshot(),
             "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
             "mission": MissionEvaluator().evaluate(world),
@@ -53,6 +54,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             sim.inject_network_partition("orbital-node-02")
         elif name == "compute":
             sim.inject_compute_overload("orbital-node-01", 45)
+        elif name == "earth-loss":
+            sim.inject_earth_contact_loss()
         elif name == "compound":
             sim.inject_thermal_failure("orbital-node-01", 96)
             sim.inject_power_failure("orbital-node-02", 20)
@@ -128,6 +131,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <button onclick="scenario('network')">Network</button>
 <button onclick="scenario('partition')">Network Partition</button>
 <button onclick="scenario('compound')">Compound</button>
+<button onclick="scenario('earth-loss')">Earth Contact Loss</button>
 </div>
 
 <div id="kpis" class="grid"></div>
@@ -153,7 +157,8 @@ async function refresh(){
  '<div class="card"><div class="muted">Simulation tick</div><div class="kpi">'+d.tick+'</div></div>'+
  '<div class="card"><div class="muted">Mission score</div><div class="kpi">'+d.mission.score+'/100</div></div>'+
  '<div class="card"><div class="muted">Memory events</div><div class="kpi">'+d.memory_entries+'</div></div>'+
- '<div class="card"><div class="muted">Comms delay</div><div class="kpi">'+d.comms_delay_s+'s</div></div>';
+ '<div class="card"><div class="muted">Comms delay</div><div class="kpi">'+d.comms_delay_s+'s</div></div>'+
+ '<div class="card"><div class="muted">Earth contact</div><div class="kpi">'+(d.earth_contact_available?'AVAILABLE':'LOST')+'</div></div>';
 
  let rows='<table><tr><th>Node</th><th>Temp</th><th>Power</th><th>CPU</th><th>Workload</th><th>Network</th><th>Status</th></tr>';
  for(const [id,n] of Object.entries(d.nodes)){
