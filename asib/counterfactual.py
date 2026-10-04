@@ -81,10 +81,9 @@ class CounterfactualEvaluator:
 
                 operationally_safe = self.validator.validate(shadow).safe
                 tracked = {
-                    node_id
+                    action.target_node
                     for action in actions
-                    for node_id in (action.source_node, action.target_node)
-                    if node_id is not None
+                    if action.action_type == "migrate" and action.target_node is not None
                 }
                 if operationally_safe:
                     for node_id in tracked:
