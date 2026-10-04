@@ -127,4 +127,6 @@ class ASIBRuntime:
         self.__init__(Simulator())
 
     def storage_status(self) -> dict:
-        return self.store.counts() if self.store is not None else {"enabled": False}
+        if self.store is None:
+            return {"enabled": False, "events": 0, "decisions": 0}
+        return {"enabled": True, **self.store.counts()}
