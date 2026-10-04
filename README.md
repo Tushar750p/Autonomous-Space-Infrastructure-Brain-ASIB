@@ -59,6 +59,7 @@ Infrastructure Memory
 - 🧾 Decision traces for every autonomous planning cycle
 - 📊 Reproducible compound benchmark with recovery, score-delta and unsafe-event metrics
 - 🧪 Unit + system tests + GitHub Actions CI
+- 🩺 Service health, metrics, audit and replay API endpoints
 - 🐳 Docker + Docker Compose support
 
 ## Run locally
@@ -86,6 +87,16 @@ docker compose up --build
 ```
 
 Open `http://localhost:8080`.
+
+Health endpoint: `http://localhost:8080/api/health`
+
+Metrics endpoint: `http://localhost:8080/api/metrics`
+
+Audit export: `http://localhost:8080/api/audit`
+
+Replay export: `http://localhost:8080/api/replay`
+
+Environment variables: `ASIB_HOST`, `ASIB_PORT`, `ASIB_TICK_INTERVAL_S`.
 
 ## Example autonomous scenario
 
