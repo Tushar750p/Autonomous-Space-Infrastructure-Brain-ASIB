@@ -13,7 +13,7 @@ class HealthService:
 
     def snapshot(self) -> dict:
         world = self.runtime.world
-        mission = MissionEvaluator().evaluate(world)
+        mission = self.runtime.mission.evaluate(world)
         invariants = SafetyValidator().validate(world)
         audit_valid = world.audit_ledger.verify()
         replay_valid = self.runtime.replay.validate()
