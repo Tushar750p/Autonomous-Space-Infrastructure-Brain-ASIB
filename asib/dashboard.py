@@ -4,6 +4,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+from .experiments import run_experiment_suite
 from .mission import MissionEvaluator
 from .predictor import RiskPredictor
 from .runtime import ASIBRuntime
@@ -37,6 +38,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "memory_entries": len(world.memory),
             "knowledge": rt.knowledge.summary(world),
             "robots": {k: v.__dict__ for k, v in rt.robots.robots.items()},
+            "audit": {
+                "valid": world.audit_ledger.verify(),
+                "entries": len(world.audit_ledger.entries),
+                "latest_digest": world.audit_ledger.entries[-1].digest if world.audit_ledger.entries else None,
+            },
             "last_decision": world.decision_log[-1] if world.decision_log else None,
         }
 
@@ -84,6 +90,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.runtime.reset()
                 return self.json_response(self.state())
 
+        if parsed.path == "/api/experiments":
+            ticks = int(parse_qs(parsed.query).get("ticks", ["10"])[0])
+            if ticks < 1 or ticks > 500:
+                return self.json_response({"error": "ticks must be in [1, 500]"}, 400)
+            return self.json_response(run_experiment_suite(ticks))
+
         if parsed.path == "/api/scenario":
             name = parse_qs(parsed.query).get("name", ["compound"])[0]
             try:
@@ -121,7 +133,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <body><main>
 <div class="header">
 <div><h1>🛰️ ASIB Control Room</h1><div class="muted">Autonomous Space Infrastructure Brain · Earth-based research testbed</div></div>
-<div><button onclick="call('/api/tick')">Run Tick</button><button onclick="call('/api/reset')">Reset</button></div>
+<div><button onclick="call('/api/tick')">Run Tick</button><button onclick="call('/api/reset')">Reset</button><button onclick="runExperiments()">Validation Suite</button></div>
 </div>
 
 <div class="card">
@@ -142,7 +154,9 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Risk Forecast</h3><pre id="risks">Loading...</pre></div>
 <div class="card"><h3>Distributed Knowledge</h3><pre id="knowledge">Loading...</pre></div>
 <div class="card"><h3>Robot Fleet</h3><pre id="robots">Loading...</pre></div>
+<div class="card"><h3>Audit Ledger</h3><pre id="audit">Loading...</pre></div>
 </div>
+<div class="card"><h3>Experiment Validation</h3><pre id="experiments">Run the validation suite to compare ASIB against a passive baseline.</pre></div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
 
 <script>
@@ -151,6 +165,10 @@ async function call(url){
   await refresh(); return d;
 }
 async function scenario(name){ await call('/api/scenario?name='+encodeURIComponent(name)); }
+async function runExperiments(){
+  const d=await (await fetch('/api/experiments?ticks=10')).json();
+  document.getElementById('experiments').textContent=JSON.stringify(d,null,2);
+}
 function esc(x){return String(x).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 async function refresh(){
  const d=await (await fetch('/api/state',{cache:'no-store'})).json();
@@ -171,6 +189,7 @@ async function refresh(){
  document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
  document.getElementById('knowledge').textContent=JSON.stringify(d.knowledge,null,2);
  document.getElementById('robots').textContent=JSON.stringify(d.robots,null,2);
+ document.getElementById('audit').textContent=JSON.stringify(d.audit,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
 }
 refresh(); setInterval(refresh,1500);
