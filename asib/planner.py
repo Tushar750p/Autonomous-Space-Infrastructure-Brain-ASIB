@@ -148,3 +148,64 @@ class MultiNodePlanner:
             rationale.append("No safe autonomous action found; hold state")
 
         return Plan(actions, rationale)
+
+
+    def fallback_plan(self, world: World) -> Plan:
+        """Build a migration-free emergency plan with only local safe actions."""
+        actions: list[Action] = []
+        rationale: list[str] = []
+
+        for node in world.nodes.values():
+            remaining = max(0.0, node.workload - node.critical_workload)
+
+            if (
+                remaining > 0
+                and (
+                    node.temperature_c >= self.policy.THERMAL_CRITICAL
+                    or node.power_pct <= self.policy.POWER_CRITICAL
+                )
+            ):
+                amount = min(25.0, remaining)
+                action = Action(
+                    "shed",
+                    node.node_id,
+                    amount=amount,
+                    reason="counterfactual fallback: local load reduction",
+                )
+                if self.policy.allow(world, action):
+                    actions.append(action)
+                    remaining -= amount
+                    rationale.append(
+                        f"Fallback: shed {amount:.1f} non-critical workload on {node.node_id}"
+                    )
+
+            if node.power_pct <= self.policy.POWER_LOW and remaining > 0:
+                amount = min(15.0, remaining)
+                action = Action(
+                    "reduce_power",
+                    node.node_id,
+                    amount=amount,
+                    reason="counterfactual fallback: local power conservation",
+                )
+                if self.policy.allow(world, action):
+                    actions.append(action)
+                    rationale.append(
+                        f"Fallback: reduce load by {amount:.1f} on {node.node_id}"
+                    )
+
+            if not node.network_ok:
+                action = Action(
+                    "isolate",
+                    node.node_id,
+                    reason="counterfactual fallback: contain network isolation",
+                )
+                if self.policy.allow(world, action):
+                    actions.append(action)
+                    rationale.append(f"Fallback: isolate {node.node_id}")
+
+        if actions:
+            rationale.insert(0, "Fallback plan generated after primary plan validation")
+        else:
+            rationale.append("No migration-free safe fallback available")
+
+        return Plan(actions, rationale)
