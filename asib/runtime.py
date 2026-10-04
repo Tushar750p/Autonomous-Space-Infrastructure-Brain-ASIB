@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .comms import CommunicationModel, Message
+from .distributed import DistributedKnowledge
 from .engine import ASIBBrain
 from .models import Event, World
 from .predictor import RiskPredictor
@@ -16,10 +17,11 @@ class RuntimeReport:
     risks: list[dict]
     state: dict
     memory_entries: int
+    knowledge: dict
 
 
 class ASIBRuntime:
-    """Closed-loop Earth testbed: physics -> telemetry -> brain -> robots -> verification."""
+    """Closed-loop Earth testbed: physics -> knowledge -> brain -> robots -> verification."""
 
     def __init__(self, simulator: Simulator | None = None):
         self.simulator = simulator or Simulator()
@@ -28,6 +30,8 @@ class ASIBRuntime:
         self.predictor = RiskPredictor()
         self.telemetry = TelemetryRecorder()
         self.comms = CommunicationModel()
+        self.knowledge = DistributedKnowledge(self.world)
+        self.knowledge.prime()
         self.robots = RobotFleet(self.world)
         self.inbox: list[Message] = []
         self.history: list[Event] = []
@@ -36,7 +40,8 @@ class ASIBRuntime:
         self.simulator.advance_physics()
         self.telemetry.record(self.world)
 
-        events = self.brain.step(self.world)
+        events = self.knowledge.sync(self.world)
+        events += self.brain.step(self.world, knowledge=self.knowledge)
         risks = self.predictor.predict(self.world)
 
         for risk in risks:
@@ -57,6 +62,7 @@ class ASIBRuntime:
             risks=[r.__dict__ for r in risks],
             state=self.simulator.snapshot(),
             memory_entries=len(self.world.memory),
+            knowledge=self.knowledge.summary(self.world),
         )
 
     def queue_message(self, source: str, destination: str, payload: str):
