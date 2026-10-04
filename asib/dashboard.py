@@ -203,6 +203,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Audit Ledger</h3><pre id="audit">Loading...</pre></div>
 <div class="card"><h3>Replay Journal</h3><pre id="replay">Loading...</pre></div>
 <div class="card"><h3>Resource Envelope</h3><pre id="resources">Loading...</pre></div>
+<div class="card"><h3>Forecast Calibration</h3><pre id="forecastCalibration">Loading...</pre></div>
 </div>
 <div class="card"><h3>Experiment Validation</h3><pre id="experiments">Run the validation suite to compare ASIB against a passive baseline.</pre></div>
 <div class="card"><h3>Latest Incident Postmortem</h3><pre id="postmortem">Loading...</pre></div>
@@ -229,7 +230,8 @@ async function refresh(){
  '<div class="card"><div class="muted">Comms delay</div><div class="kpi">'+d.comms_delay_s+'s</div></div>'+
  '<div class="card"><div class="muted">Max knowledge age</div><div class="kpi">'+d.knowledge.max_age_ticks+'t</div></div>'+
  '<div class="card"><div class="muted">Earth contact</div><div class="kpi">'+(d.earth_contact_available?'AVAILABLE':'LOST')+'</div></div>'+
- '<div class="card"><div class="muted">Orbit phase</div><div class="kpi">'+d.environment.phase_deg+'°</div><div class="muted">'+(d.environment.in_eclipse?'ECLIPSE':'SUNLIT')+'</div></div>';
+ '<div class="card"><div class="muted">Orbit phase</div><div class="kpi">'+d.environment.phase_deg+'°</div><div class="muted">'+(d.environment.in_eclipse?'ECLIPSE':'SUNLIT')+'</div></div>'+
+ '<div class="card"><div class="muted">Forecast samples</div><div class="kpi">'+d.forecast_calibration.completed+'</div></div>';
 
  let rows='<table><tr><th>Node</th><th>Temp</th><th>Power</th><th>CPU</th><th>Workload</th><th>Network</th><th>Status</th></tr>';
  for(const [id,n] of Object.entries(d.nodes)){
@@ -243,6 +245,7 @@ async function refresh(){
  document.getElementById('audit').textContent=JSON.stringify(d.audit,null,2);
  document.getElementById('replay').textContent=JSON.stringify(d.replay,null,2);
  document.getElementById('resources').textContent=JSON.stringify(d.resources,null,2);
+ document.getElementById('forecastCalibration').textContent=JSON.stringify(d.forecast_calibration,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
  const pm=await (await fetch('/api/postmortem',{cache:'no-store'})).json();
  document.getElementById('postmortem').textContent=JSON.stringify(pm,null,2);
