@@ -4,6 +4,7 @@ from .benchmark import run_compound_benchmark
 from .experiments import run_experiment_suite
 from .mission import MissionEvaluator
 from .runtime import ASIBRuntime
+from .robustness import run_robustness_suite
 from .validation import SafetyValidator
 
 
@@ -33,6 +34,17 @@ def run_selftest(ticks: int = 5) -> dict:
     suite_b = run_experiment_suite(max(1, min(5, ticks)))
     checks["experiment_determinism"] = suite_a == suite_b
     checks["experiment_coverage"] = len(suite_a["scenarios"]) >= 7
+
+    robustness = run_robustness_suite(ticks=max(1, min(3, ticks)), trials=2, seed=20261004)
+    checks["robustness_determinism"] = robustness == run_robustness_suite(
+        ticks=max(1, min(3, ticks)), trials=2, seed=20261004
+    )
+    checks["robustness_bounds"] = all(
+        0.0 <= item["min_final_score"] <= 100.0
+        and 0.0 <= item["mean_final_score"] <= 100.0
+        and 0.0 <= item["max_final_score"] <= 100.0
+        for item in robustness["scenarios"]
+    )
 
     checks["all"] = all(checks.values())
 
