@@ -46,11 +46,15 @@ def run_selftest(ticks: int = 5) -> dict:
     }
 
 
-if __name__ == "__main__":
+def main() -> int:
     import json
     import sys
 
     requested = int(sys.argv[1]) if len(sys.argv) > 1 else 5
     result = run_selftest(requested)
     print(json.dumps(result, indent=2))
-    raise SystemExit(0 if result["passed"] else 1)
+    return 0 if result["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
