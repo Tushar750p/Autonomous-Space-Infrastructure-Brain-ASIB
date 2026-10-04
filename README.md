@@ -78,6 +78,7 @@ python run_experiments.py --ticks 20
 python -m asib.selftest 5
 python -m asib.scenario_cli eclipse
 python -m asib.robustness_cli --ticks 5 --trials 5
+python -m asib.lab_cli --ticks 3 --robustness-trials 2
 asib-checkpoint --scenario compound --ticks 3 --path asib-checkpoint.json
 python -m unittest discover -s tests -v
 ```
@@ -90,7 +91,7 @@ python -c "from asib.dashboard import run; run(host='0.0.0.0', port=8080)"
 
 Open `http://localhost:8080`.
 
-The package also supports `python -m asib` as a direct CLI entry point, `asib-scenario <name>` for deterministic research scenarios, and `asib-checkpoint` for checkpoint artifacts.
+The package also supports `python -m asib` as a direct CLI entry point, `asib-scenario <name>` for deterministic research scenarios, `asib-checkpoint` for checkpoint artifacts, and `asib-lab` for the complete local validation suite.
 
 ### Docker
 
@@ -166,6 +167,8 @@ asib/
 ├── postmortem.py      # incident postmortem generator
 ├── checkpoint.py      # complete world checkpoint export/restore
 ├── checkpoint_cli.py  # checkpoint artifact command-line interface
+├── lab.py             # combined research validation orchestration
+├── lab_cli.py         # combined research validation CLI
 ├── runtime.py         # closed-loop autonomous runtime
 ├── benchmark.py       # reproducible system benchmark
 ├── scenarios.py       # repeatable fault scenarios
