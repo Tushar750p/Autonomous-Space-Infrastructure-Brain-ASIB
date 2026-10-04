@@ -124,7 +124,7 @@ class ASIBBrain:
 
         history = observed + execution_events + verified
         world.memory.extend(history)
-        world.decision_log.append({
+        decision = {
             "trace_id": trace_id,
             "tick": world.tick,
             "mode": world.autonomy_mode.value,
@@ -133,5 +133,7 @@ class ASIBBrain:
             "executed": [event.message for event in execution_events],
             "verified": [event.message for event in verified],
             "invariants_safe": self.validator.validate(world).safe,
-        })
+        }
+        world.decision_log.append(decision)
+        world.audit_ledger.append(decision)
         return history
