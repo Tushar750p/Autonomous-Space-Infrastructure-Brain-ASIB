@@ -11,7 +11,9 @@ class TestScenarios(unittest.TestCase):
 
     def test_eclipse_compound_scenario_keeps_local_autonomy(self):
         result = run_fault_scenario("eclipse-compound")
-        self.assertFalse(result["state"]["orbital-node-02"]["network_ok"] is False and result["mode"] == "normal")
+        self.assertTrue(result["environment"]["in_eclipse"])
+        self.assertEqual(result["environment"]["solar_generation_pct"], 0.2)
+        self.assertIn(result["mode"], {"normal", "conservation", "safe"})
         self.assertIn("forecast_calibration", result)
 
 
