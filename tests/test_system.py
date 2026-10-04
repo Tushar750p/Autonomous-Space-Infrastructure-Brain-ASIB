@@ -17,6 +17,8 @@ class TestASIBSystem(unittest.TestCase):
         self.assertEqual(runtime.world.tick, 1)
         self.assertEqual(len(runtime.world.telemetry["orbital-node-01"]), 1)
         self.assertEqual(len(runtime.world.memory), len(first.events))
+        self.assertIn("total_free_cpu", first.resources)
+        self.assertIn("brier_score", first.forecast_calibration)
 
     def test_telemetry_accumulates_for_prediction(self):
         runtime = ASIBRuntime()
