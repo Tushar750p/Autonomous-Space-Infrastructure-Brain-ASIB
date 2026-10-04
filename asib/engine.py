@@ -1,6 +1,7 @@
 from .action_executor import ActionExecutor
 from .counterfactual import CounterfactualEvaluator
 from .models import Action, AutonomyMode, Event, NodeStatus, World
+from .optimizer import ConstrainedPlanOptimizer
 from .planner import MultiNodePlanner
 from .policy import SafetyPolicy
 from .validation import SafetyValidator
@@ -15,6 +16,7 @@ class ASIBBrain:
         self.validator = SafetyValidator()
         self.executor = ActionExecutor(self.policy, self.validator)
         self.counterfactual = CounterfactualEvaluator(self.executor)
+        self.optimizer = ConstrainedPlanOptimizer(self.counterfactual)
 
     def observe(self, world: World) -> list[Event]:
         events: list[Event] = []
@@ -96,6 +98,7 @@ class ASIBBrain:
         trace_id = f"T{world.tick + 1:05d}"
         observed = self.observe(world)
         plan = self.planner.plan(world, knowledge=knowledge)
+        plan, optimization = self.optimizer.optimize(world, plan, trace_id)
 
         shadow = self.counterfactual.evaluate(world, plan.actions, trace_id)
         shadow_event = None
@@ -178,6 +181,7 @@ class ASIBBrain:
             "verified": [event.message for event in verified],
             "invariants_safe": self.validator.validate(world).safe,
             "shadow": shadow.as_dict(),
+            "optimization": optimization,
             "decision_class": (
                 "escalate" if needs_human_review
                 else "repair" if repair_event
