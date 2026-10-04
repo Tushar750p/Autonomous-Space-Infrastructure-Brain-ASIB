@@ -20,6 +20,10 @@ ASIB investigates a different systems problem:
 
 The key architectural idea is a **cross-infrastructure autonomy layer** rather than a single spacecraft controller.
 
+### V2 prototype results
+
+The current Earth testbed now models observer-specific state, delayed synchronization, network partitions, uncertainty penalties, execution-time target revalidation, explicit safety invariants, maintenance-robot simulation and reproducible recovery metrics. This is a research prototype rather than evidence that the architecture is flight-qualified.
+
 ### Research questions
 
 1. Can infrastructure workloads be reallocated while preserving critical service?
