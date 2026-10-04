@@ -4,7 +4,6 @@ import argparse
 
 from .checkpoint import save
 from .runtime import ASIBRuntime
-from .scenarios import run_fault_scenario
 from .simulator import Simulator
 
 
