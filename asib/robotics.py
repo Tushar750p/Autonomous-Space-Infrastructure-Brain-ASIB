@@ -93,11 +93,21 @@ class RobotFleet:
                     target_id = robot.target_node
                     target = self.world.nodes.get(target_id or "")
                     if target:
-                        target.temperature_c = max(30.0, target.temperature_c - 12.0)
-                        target.network_ok = True
+                        repairs = []
+                        if target.temperature_c >= 70.0:
+                            target.temperature_c = max(30.0, target.temperature_c - 12.0)
+                            repairs.append("thermal")
+                        if target.power_pct <= 30.0:
+                            target.power_pct = min(100.0, target.power_pct + 20.0)
+                            repairs.append("power")
+                        if not target.network_ok:
+                            target.network_ok = True
+                            repairs.append("network")
+                        if not repairs:
+                            repairs.append("inspection")
                     events.append(Event(
                         self.world.tick, "robot_service", target_id or "unknown",
-                        f"{robot.robot_id} completed simulated maintenance", "info"
+                        f"{robot.robot_id} completed simulated maintenance ({', '.join(repairs)})", "info"
                     ))
                     robot.status = RobotStatus.IDLE
                     robot.target_node = None
