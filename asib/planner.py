@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from .models import Action, AutonomyMode, World
 from .network import NetworkModel
 from .policy import SafetyPolicy
-from .resources import ResourceReservationBook
+from .resources import ResourceReservationBook, migration_power_floor
 
 
 @dataclass
@@ -79,7 +79,7 @@ class MultiNodePlanner:
                     0.0, float(estimated.get("cpu_capacity", candidate.cpu_capacity)) - estimated_cpu
                 )
 
-                if estimated_temp >= self.policy.THERMAL_DEGRADED or estimated_power <= self.policy.POWER_LOW:
+                if estimated_temp >= self.policy.THERMAL_DEGRADED or estimated_power <= migration_power_floor(world):
                     continue
                 if estimated_free_cpu < 5.0 or reservations.available_cpu(candidate.node_id, candidate) < 5.0:
                     continue
