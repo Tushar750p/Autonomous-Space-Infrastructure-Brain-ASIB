@@ -52,6 +52,7 @@ Infrastructure Memory
 - ✅ Pre-execution counterfactual simulation over a future physics horizon
 - ✅ Reproducible passive-vs-ASIB experiment suite
 - ✅ Deterministic state replay including orbital environment
+- ✅ Forecast outcome calibration with Brier-score tracking
 - ✅ Tamper-evident decision ledger with verifiable hash chain
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
@@ -59,7 +60,7 @@ Infrastructure Memory
 - 🧾 Decision traces for every autonomous planning cycle
 - 📊 Reproducible compound benchmark with recovery, score-delta and unsafe-event metrics
 - 🧪 Unit + system tests + GitHub Actions CI
-- 🩺 Service health, metrics, audit, replay and incident-postmortem API endpoints
+- 🩺 Service health, metrics, audit, replay, calibration and incident-postmortem API endpoints
 - 🐳 Docker + Docker Compose support
 
 ## Run locally
@@ -136,12 +137,15 @@ asib/
 ├── network.py      # node topology and partitions
 ├── telemetry.py    # telemetry history
 ├── resources.py    # plan-local resource reservations
+├── calibration.py  # forecast outcome calibration
 ├── robotics.py     # safe maintenance-robot simulator
 ├── hil.py          # simulation-only hardware boundary
 ├── audit.py        # tamper-evident decision ledger
 ├── experiments.py  # passive-vs-ASIB validation suite
 ├── audit.py        # tamper-evident decision ledger
 ├── replay.py       # deterministic state replay journal
+├── health.py       # consolidated operational health
+├── postmortem.py   # incident postmortem generator
 ├── runtime.py      # closed-loop autonomous runtime
 ├── benchmark.py    # reproducible system benchmark
 ├── scenarios.py    # repeatable fault scenarios
@@ -170,13 +174,11 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 
 **V3 — Safe test interfaces:** simulation-only hardware-in-the-loop boundary and tamper-evident decision audit ✅
 
-**V4 — Validation harness:** reproducible passive-vs-ASIB experiments across seven fault scenarios ✅
+**V4 — Validation harness:** reproducible passive-vs-ASIB experiments across fault scenarios, future-horizon counterfactual validation and forecast calibration ✅
 
-**V3 — Hardware-in-the-loop:** simulated interfaces for future physical testbeds, with strict separation from real mission control
+**V5 — Environmental autonomy:** deterministic orbital eclipse/sunlight dynamics, plan-local resource reservations, environment-aware energy margins and maintenance failure recovery ✅
 
-**V4 — Research validation:** formal safety properties, reproducible benchmarks and independent verification
-
-**V5 — Space integration study:** qualified interfaces and mission-specific integration research
+**V6 — Space integration study:** mission-specific integration research, future hardware qualification and independent verification
 
 ## Intellectual property
 
