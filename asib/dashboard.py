@@ -35,6 +35,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
             "mission": MissionEvaluator().evaluate(world),
             "memory_entries": len(world.memory),
+            "knowledge": rt.knowledge.summary(world),
             "robots": {k: v.__dict__ for k, v in rt.robots.robots.items()},
             "last_decision": world.decision_log[-1] if world.decision_log else None,
         }
@@ -139,6 +140,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Node Telemetry</h3><div id="nodeTable"></div></div>
 <div class="grid">
 <div class="card"><h3>Risk Forecast</h3><pre id="risks">Loading...</pre></div>
+<div class="card"><h3>Distributed Knowledge</h3><pre id="knowledge">Loading...</pre></div>
 <div class="card"><h3>Robot Fleet</h3><pre id="robots">Loading...</pre></div>
 </div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
@@ -158,6 +160,7 @@ async function refresh(){
  '<div class="card"><div class="muted">Mission score</div><div class="kpi">'+d.mission.score+'/100</div></div>'+
  '<div class="card"><div class="muted">Memory events</div><div class="kpi">'+d.memory_entries+'</div></div>'+
  '<div class="card"><div class="muted">Comms delay</div><div class="kpi">'+d.comms_delay_s+'s</div></div>'+
+ '<div class="card"><div class="muted">Max knowledge age</div><div class="kpi">'+d.knowledge.max_age_ticks+'t</div></div>'+
  '<div class="card"><div class="muted">Earth contact</div><div class="kpi">'+(d.earth_contact_available?'AVAILABLE':'LOST')+'</div></div>';
 
  let rows='<table><tr><th>Node</th><th>Temp</th><th>Power</th><th>CPU</th><th>Workload</th><th>Network</th><th>Status</th></tr>';
@@ -166,6 +169,7 @@ async function refresh(){
  }
  document.getElementById('nodeTable').innerHTML=rows+'</table>';
  document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
+ document.getElementById('knowledge').textContent=JSON.stringify(d.knowledge,null,2);
  document.getElementById('robots').textContent=JSON.stringify(d.robots,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
 }
