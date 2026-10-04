@@ -40,8 +40,8 @@ class ASIBRuntime:
         self.simulator.advance_physics()
         self.telemetry.record(self.world)
 
-        events = self.knowledge.sync(self.world)
-        events += self.brain.step(self.world, knowledge=self.knowledge)
+        knowledge_events = self.knowledge.sync(self.world)
+        brain_events = self.brain.step(self.world, knowledge=self.knowledge)
         risks = self.predictor.predict(self.world)
 
         for risk in risks:
@@ -50,11 +50,15 @@ class ASIBRuntime:
                 if node.status.value not in {"isolated"}:
                     self.robots.enqueue(risk.node_id, "inspect-and-service", priority=10)
 
-        events += self.robots.dispatch()
-        events += self.robots.step()
+        robot_events = self.robots.dispatch()
+        robot_events += self.robots.step()
 
+        events = knowledge_events + brain_events + robot_events
         self.history.extend(events)
-        self.world.memory.extend(events)
+
+        # Brain events are already persisted inside ASIBBrain.step(). Only
+        # persist the auxiliary knowledge/robot events here to avoid duplicates.
+        self.world.memory.extend(knowledge_events + robot_events)
 
         return RuntimeReport(
             tick=self.world.tick,
