@@ -41,3 +41,12 @@ class TestCounterfactual(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_future_horizon_is_reported(self):
+        sim = Simulator()
+        action = Action("shed", "orbital-node-01", amount=5, reason="horizon test")
+        report = CounterfactualEvaluator().evaluate(sim.world, [action], "T00001", horizon_ticks=2)
+
+        self.assertEqual(report.horizon_ticks, 2)
+        self.assertIn("future_safe", report.as_dict())
