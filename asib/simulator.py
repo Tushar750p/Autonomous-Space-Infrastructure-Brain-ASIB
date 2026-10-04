@@ -84,7 +84,6 @@ class Simulator:
 
     def snapshot(self):
         return {
-            "_environment": self.world.environment.snapshot(),
             node_id: {
                 "cpu_load": round(node.cpu_load, 2),
                 "temperature_c": round(node.temperature_c, 2),
@@ -98,3 +97,6 @@ class Simulator:
             }
             for node_id, node in self.world.nodes.items()
         }
+
+    def environment_snapshot(self):
+        return self.world.environment.snapshot()
