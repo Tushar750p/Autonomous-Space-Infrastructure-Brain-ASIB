@@ -54,6 +54,7 @@ Infrastructure Memory
 - ✅ Deterministic state replay including orbital environment
 - ✅ Forecast outcome calibration with Brier-score tracking
 - ✅ Deterministic Monte Carlo-style robustness suite
+- ✅ Complete JSON-safe world checkpoints with restore support
 - ✅ Configurable mission-priority profiles
 - ✅ Optional SQLite persistence for operational events and decisions
 - ✅ Configurable mission-priority profiles and scalable multi-node simulation
@@ -162,9 +163,12 @@ asib/
 ├── replay.py          # tamper-evident deterministic state replay
 ├── health.py          # consolidated operational health
 ├── postmortem.py      # incident postmortem generator
+├── checkpoint.py      # complete world checkpoint export/restore
 ├── runtime.py         # closed-loop autonomous runtime
 ├── benchmark.py       # reproducible system benchmark
 ├── scenarios.py       # repeatable fault scenarios
+├── scenario_cli.py    # scenario command-line interface
+├── robustness_cli.py  # robustness command-line interface
 └── dashboard.py       # autonomous browser control room
 ```
 
