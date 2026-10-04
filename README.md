@@ -36,6 +36,7 @@ Infrastructure Memory
 - ⚡ Power reserve modelling
 - 📡 Network topology + simulated communication delay
 - ☀️ Deterministic orbital sunlight/eclipse power environment
+- 🧮 Plan-local resource reservations and eclipse-aware power floors
 - 🌍 Simulated intermittent Earth contact
 - 💥 Thermal, power, network-partition and compute fault injection
 - 🔄 Multi-node workload migration
@@ -48,11 +49,13 @@ Infrastructure Memory
 - ✅ Explicit post-action safety invariants
 - ✅ Tamper-evident decision ledger (SHA-256 chain)
 - ✅ Simulation-only hardware-in-the-loop boundary
+- ✅ Pre-execution counterfactual simulation over a future physics horizon
 - ✅ Reproducible passive-vs-ASIB experiment suite
 - ✅ Deterministic state replay including orbital environment
+- ✅ Tamper-evident decision ledger with verifiable hash chain
 - 🎯 Mission-health evaluation
 - 🖥️ Browser control room with continuous autonomous ticks
-- 🤖 Simulated maintenance-robot fleet
+- 🤖 Simulated maintenance-robot fleet with failure/reassignment recovery
 - 🧾 Decision traces for every autonomous planning cycle
 - 📊 Reproducible compound benchmark with recovery, score-delta and unsafe-event metrics
 - 🧪 Unit + system tests + GitHub Actions CI
@@ -106,9 +109,12 @@ asib/
 ├── models.py       # world, nodes, actions, events
 ├── simulator.py    # deterministic digital twin + fault injection
 ├── environment.py  # orbital sunlight/eclipse environment
+├── resources.py    # resource envelopes + reservations
 ├── policy.py       # safety boundaries
 ├── planner.py      # uncertainty-aware multi-node recovery planning
-├── engine.py       # observe / execute / verify loop
+├── engine.py       # observe / shadow / execute / verify loop
+├── action_executor.py # centralized safe actuation
+├── counterfactual.py  # future-horizon shadow validation
 ├── distributed.py  # delayed observer-specific infrastructure knowledge
 ├── memory.py       # operational memory
 ├── predictor.py    # transparent trend-aware risk scoring
@@ -121,6 +127,8 @@ asib/
 ├── hil.py          # simulation-only hardware boundary
 ├── audit.py        # tamper-evident decision ledger
 ├── experiments.py  # passive-vs-ASIB validation suite
+├── audit.py        # tamper-evident decision ledger
+├── replay.py       # deterministic state replay journal
 ├── runtime.py      # closed-loop autonomous runtime
 ├── benchmark.py    # reproducible system benchmark
 ├── scenarios.py    # repeatable fault scenarios
