@@ -6,7 +6,7 @@ from typing import Callable
 from .mission import MissionEvaluator
 from .runtime import ASIBRuntime
 from .simulator import Simulator
-from .validation import SafetyValidator
+from .policy import SafetyPolicy
 
 
 @dataclass(frozen=True)
@@ -62,17 +62,30 @@ def default_experiment_suite() -> tuple[ExperimentCase, ...]:
     )
 
 
+def _policy_unsafe(sim: Simulator) -> bool:
+    policy = SafetyPolicy()
+    return any(
+        node.temperature_c >= policy.THERMAL_CRITICAL
+        or node.power_pct <= policy.POWER_CRITICAL
+        or (not node.network_ok and node.critical_workload > 0)
+        for node in sim.world.nodes.values()
+    )
+
+
 def _run_passive(sim: Simulator, ticks: int) -> dict:
     evaluator = MissionEvaluator()
     scores: list[float] = []
+    unsafe_ticks = 0
     for _ in range(max(0, ticks)):
         sim.advance_physics()
         scores.append(evaluator.evaluate(sim.world)["score"])
+        unsafe_ticks += int(_policy_unsafe(sim))
     final = evaluator.evaluate(sim.world)
     return {
         "final_score": final["score"],
         "average_score": round(sum(scores) / len(scores), 2) if scores else final["score"],
-        "critical_breach": not SafetyValidator().validate(sim.world).safe,
+        "policy_unsafe": _policy_unsafe(sim),
+        "unsafe_ticks": unsafe_ticks,
         "score_trajectory": scores,
     }
 
@@ -84,6 +97,7 @@ def _run_asib(sim: Simulator, ticks: int) -> dict:
     peak_risk = 0.0
     action_count = 0
     recovery_tick = None
+    unsafe_ticks = 0
 
     for report in runtime.run(ticks):
         score = evaluator.evaluate(sim.world)["score"]
@@ -94,15 +108,17 @@ def _run_asib(sim: Simulator, ticks: int) -> dict:
             if event.get("event_type") == "action":
                 action_count += 1
 
-        safe = SafetyValidator().validate(sim.world).safe
-        if recovery_tick is None and safe:
+        policy_unsafe = _policy_unsafe(sim)
+        unsafe_ticks += int(policy_unsafe)
+        if recovery_tick is None and not policy_unsafe:
             recovery_tick = report.tick
 
     final = evaluator.evaluate(sim.world)
     return {
         "final_score": final["score"],
         "average_score": round(sum(scores) / len(scores), 2) if scores else final["score"],
-        "critical_breach": not SafetyValidator().validate(sim.world).safe,
+        "policy_unsafe": _policy_unsafe(sim),
+        "unsafe_ticks": unsafe_ticks,
         "peak_risk": round(peak_risk, 2),
         "action_count": action_count,
         "recovery_tick": recovery_tick,
@@ -128,7 +144,7 @@ def run_experiment_suite(ticks: int = 20) -> dict:
             "passive": passive,
             "asib": active,
             "score_improvement": round(active["final_score"] - passive["final_score"], 2),
-            "safety_delta": int(not active["critical_breach"]) - int(not passive["critical_breach"]),
+            "safety_delta": int(not active["policy_unsafe"]) - int(not passive["policy_unsafe"]),
         })
 
     return {
