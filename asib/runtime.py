@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from .calibration import ForecastLedger
 from .comms import CommunicationModel, Message
 from .distributed import DistributedKnowledge
 from .engine import ASIBBrain
@@ -31,6 +32,7 @@ class ASIBRuntime:
         self.world: World = self.simulator.world
         self.brain = ASIBBrain()
         self.predictor = RiskPredictor()
+        self.forecasts = ForecastLedger()
         self.telemetry = TelemetryRecorder()
         self.comms = CommunicationModel()
         self.knowledge = DistributedKnowledge(self.world)
@@ -44,10 +46,12 @@ class ASIBRuntime:
     def tick(self) -> RuntimeReport:
         self.simulator.advance_physics()
         self.telemetry.record(self.world)
+        self.forecasts.observe_outcomes(self.world)
 
         knowledge_events = self.knowledge.sync(self.world)
         brain_events = self.brain.step(self.world, knowledge=self.knowledge)
         risks = self.predictor.predict(self.world)
+        self.forecasts.record(self.world.tick, risks)
 
         for risk in risks:
             if risk.score >= 70:
