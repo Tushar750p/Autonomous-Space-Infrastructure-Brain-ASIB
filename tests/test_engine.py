@@ -43,6 +43,15 @@ class TestASIBBrain(unittest.TestCase):
         sim.inject_comms_delay(18.5)
         self.assertEqual(sim.world.comms_delay_s, 18.5)
 
+    def test_safe_mode_without_action_requests_human_review(self):
+        sim = Simulator()
+        sim.inject_thermal_failure("orbital-node-01", 109)
+        sim.world.nodes["orbital-node-01"].critical_workload = sim.world.nodes["orbital-node-01"].workload
+        events = ASIBBrain().step(sim.world)
+
+        self.assertTrue(any(event.event_type == "human_review" for event in events))
+        self.assertEqual(sim.world.decision_log[-1]["decision_class"], "escalate")
+
 
 if __name__ == "__main__":
     unittest.main()
