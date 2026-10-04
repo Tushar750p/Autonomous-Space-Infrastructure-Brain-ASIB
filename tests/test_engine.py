@@ -34,9 +34,8 @@ class TestASIBBrain(unittest.TestCase):
         sim = Simulator()
         source = sim.world.nodes["orbital-node-01"]
         sim.inject_thermal_failure(source.node_id)
-        before_critical = source.critical_workload
         ASIBBrain().step(sim.world)
-        self.assertGreaterEqual(source.workload, before_critical)
+        self.assertGreaterEqual(source.workload, source.critical_workload)
 
     def test_comms_delay_is_part_of_world_state(self):
         sim = Simulator()
@@ -45,32 +44,13 @@ class TestASIBBrain(unittest.TestCase):
 
     def test_safe_mode_without_action_requests_human_review(self):
         sim = Simulator()
-        sim.inject_thermal_failure("orbital-node-01", 109)
-        sim.world.nodes["orbital-node-01"].critical_workload = sim.world.nodes["orbital-node-01"].workload
+        node = sim.world.nodes["orbital-node-01"]
+        sim.inject_thermal_failure(node.node_id, 109)
+        node.critical_workload = node.workload
         events = ASIBBrain().step(sim.world)
 
         self.assertTrue(any(event.event_type == "human_review" for event in events))
         self.assertEqual(sim.world.decision_log[-1]["decision_class"], "escalate")
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-    def test_rejected_primary_plan_is_repaired_locally(self):
-        sim = Simulator()
-        source = sim.world.nodes["orbital-node-01"]
-        sim.world.environment.phase_deg = 30.0
-        source.temperature_c = 96.0
-        for node_id in ("orbital-node-02", "orbital-node-03"):
-            sim.world.nodes[node_id].power_pct = 26.0
-
-        events = ASIBBrain().step(sim.world)
-
-        self.assertTrue(any(event.event_type == "shadow_reject" for event in events))
-        self.assertTrue(any(event.event_type == "plan_repair" for event in events))
-        self.assertEqual(sim.world.decision_log[-1]["decision_class"], "repair")
-
 
     def test_rejected_primary_plan_is_repaired_locally(self):
         sim = Simulator()
