@@ -59,7 +59,7 @@ Infrastructure Memory
 - 🧾 Decision traces for every autonomous planning cycle
 - 📊 Reproducible compound benchmark with recovery, score-delta and unsafe-event metrics
 - 🧪 Unit + system tests + GitHub Actions CI
-- 🩺 Service health, metrics, audit and replay API endpoints
+- 🩺 Service health, metrics, audit, replay and incident-postmortem API endpoints
 - 🐳 Docker + Docker Compose support
 
 ## Run locally
@@ -95,6 +95,8 @@ Metrics endpoint: `http://localhost:8080/api/metrics`
 Audit export: `http://localhost:8080/api/audit`
 
 Replay export: `http://localhost:8080/api/replay`
+
+Incident postmortem: `http://localhost:8080/api/postmortem`
 
 Environment variables: `ASIB_HOST`, `ASIB_PORT`, `ASIB_TICK_INTERVAL_S`.
 
