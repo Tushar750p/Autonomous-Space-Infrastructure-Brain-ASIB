@@ -1,22 +1,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 
-from .models import AutonomyMode, World
+from .models import World
 
 
 @dataclass(frozen=True)
 class ReplayFrame:
     tick: int
     state: dict
+    previous_digest: str = ""
+    digest: str = ""
 
     def as_dict(self) -> dict:
-        return {"tick": self.tick, "state": self.state}
+        return {
+            "tick": self.tick,
+            "state": self.state,
+            "previous_digest": self.previous_digest,
+            "digest": self.digest,
+        }
 
 
 class StateReplay:
-    """JSON-safe state journal for deterministic experiment replay and inspection."""
+    """Tamper-evident JSON-safe state journal for deterministic replay."""
 
     def __init__(self):
         self.frames: list[ReplayFrame] = []
@@ -48,8 +56,24 @@ class StateReplay:
             "links": dict(world.links),
         }
 
+    @staticmethod
+    def _digest(tick: int, state: dict, previous_digest: str) -> str:
+        canonical = json.dumps(
+            {
+                "tick": tick,
+                "state": state,
+                "previous_digest": previous_digest,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
     def capture(self, world: World):
-        self.frames.append(ReplayFrame(world.tick, self._snapshot(world)))
+        previous = self.frames[-1].digest if self.frames else ""
+        state = self._snapshot(world)
+        digest = self._digest(world.tick, state, previous)
+        self.frames.append(ReplayFrame(world.tick, state, previous, digest))
 
     def export(self) -> list[dict]:
         return [frame.as_dict() for frame in self.frames]
@@ -58,19 +82,29 @@ class StateReplay:
         return json.dumps(self.export(), sort_keys=True, separators=(",", ":"))
 
     def validate(self) -> bool:
-        return all(
-            current.tick > previous.tick
-            for previous, current in zip(self.frames, self.frames[1:])
-        )
+        previous_tick = None
+        previous_digest = ""
+        for frame in self.frames:
+            if previous_tick is not None and frame.tick <= previous_tick:
+                return False
+            if frame.previous_digest != previous_digest:
+                return False
+            expected = self._digest(frame.tick, frame.state, frame.previous_digest)
+            if frame.digest != expected:
+                return False
+            previous_tick = frame.tick
+            previous_digest = frame.digest
+        return True
 
     @classmethod
     def from_json(cls, payload: str) -> "StateReplay":
         replay = cls()
         for record in json.loads(payload):
-            replay.frames.append(
-                ReplayFrame(
-                    int(record["tick"]),
-                    dict(record["state"]),
-                )
-            )
+            tick = int(record["tick"])
+            state = dict(record["state"])
+            previous_digest = str(record.get("previous_digest", ""))
+            digest = str(record.get("digest", ""))
+            if not digest:
+                digest = cls._digest(tick, state, previous_digest)
+            replay.frames.append(ReplayFrame(tick, state, previous_digest, digest))
         return replay
