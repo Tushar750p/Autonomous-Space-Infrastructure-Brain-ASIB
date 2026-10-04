@@ -41,6 +41,14 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(replay[0]["tick"], 0)
 
+        status, checkpoint = self.fetch_json("/api/checkpoint")
+        self.assertEqual(status, 200)
+        self.assertEqual(checkpoint["format_version"], 1)
+
+        status, storage = self.fetch_json("/api/storage")
+        self.assertEqual(status, 200)
+        self.assertIn("enabled", storage)
+
     def test_tick_and_eclipse_scenario(self):
         status, tick = self.fetch_json("/api/tick")
         self.assertEqual(status, 200)
@@ -55,6 +63,11 @@ class TestDashboardAPI(unittest.TestCase):
         status, state = self.fetch_json("/api/state")
         self.assertEqual(status, 200)
         self.assertEqual(state["environment"]["phase_deg"], 150.0)
+
+        status, robustness = self.fetch_json("/api/robustness?ticks=1&trials=1")
+        self.assertEqual(status, 200)
+        self.assertTrue(robustness["deterministic"])
+        self.assertEqual(len(robustness["scenarios"]), 9)
 
 
 if __name__ == "__main__":
