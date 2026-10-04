@@ -7,6 +7,7 @@ from .comms import CommunicationModel, Message
 from .distributed import DistributedKnowledge
 from .engine import ASIBBrain
 from .models import Event, World
+from .mission import MissionProfile
 from .predictor import RiskPredictor
 from .replay import StateReplay
 from .resources import system_resource_report
@@ -33,10 +34,10 @@ class RuntimeReport:
 class ASIBRuntime:
     """Closed-loop Earth testbed: physics -> knowledge -> brain -> robots -> verification."""
 
-    def __init__(self, simulator: Simulator | None = None):
+    def __init__(self, simulator: Simulator | None = None, mission_profile: MissionProfile | None = None):
         self.simulator = simulator or Simulator()
         self.world: World = self.simulator.world
-        self.brain = ASIBBrain()
+        self.brain = ASIBBrain(mission_profile)
         self.predictor = RiskPredictor()
         self.forecasts = ForecastLedger()
         self.telemetry = TelemetryRecorder()
