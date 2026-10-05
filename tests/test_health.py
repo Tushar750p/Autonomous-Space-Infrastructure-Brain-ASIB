@@ -14,6 +14,19 @@ class TestHealthService(unittest.TestCase):
         self.assertTrue(health["audit_chain"])
         self.assertTrue(health["replay_journal"])
 
+    def test_health_surfaces_human_review(self):
+        runtime = ASIBRuntime()
+        node = runtime.world.nodes["orbital-node-01"]
+        node.temperature_c = 109.0
+        node.critical_workload = node.workload
+        runtime.brain.step(runtime.world)
+
+        health = HealthService(runtime).snapshot()
+
+        self.assertEqual(health["status"], "degraded")
+        self.assertTrue(health["needs_human_review"])
+        self.assertEqual(health["decision_class"], "escalate")
+
     def test_health_detects_audit_tampering(self):
         runtime = ASIBRuntime()
         runtime.tick()
