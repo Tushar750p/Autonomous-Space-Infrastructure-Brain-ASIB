@@ -66,6 +66,17 @@ class TestASIBBrain(unittest.TestCase):
         self.assertTrue(any(event.event_type == "plan_repair" for event in events))
         self.assertEqual(sim.world.decision_log[-1]["decision_class"], "repair")
 
+    def test_network_isolation_is_not_repeated(self):
+        sim = Simulator()
+        sim.inject_network_failure("orbital-node-03")
+        brain = ASIBBrain()
+
+        first = brain.step(sim.world)
+        second = brain.step(sim.world)
+
+        self.assertTrue(any(event.event_type == "action" and event.action == "isolate" for event in first))
+        self.assertFalse(any(event.event_type == "action" and event.action == "isolate" for event in second))
+
 
 if __name__ == "__main__":
     unittest.main()
