@@ -36,6 +36,18 @@ class TestOrbitalEnvironment(unittest.TestCase):
         sim.advance_physics()
         self.assertEqual(sim.environment_snapshot()["phase_deg"], 30.0)
 
+    def test_eclipse_thermal_bias_allows_recovery_at_critical_workload(self):
+        sim = Simulator()
+        node = sim.world.nodes["orbital-node-01"]
+        node.temperature_c = 98.0
+        node.workload = node.critical_workload
+        node.cpu_load = node.critical_workload
+        sim.world.environment.phase_deg = 90.0
+
+        sim.advance_physics()
+
+        self.assertLess(node.temperature_c, 98.0)
+
 
 if __name__ == "__main__":
     unittest.main()
