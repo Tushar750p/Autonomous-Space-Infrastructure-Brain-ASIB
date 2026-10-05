@@ -326,6 +326,10 @@ def _autonomous_loop(interval_s: float):
 def run(host=None, port=None, interval_s=None):
     config = ASIBConfig.from_env()
     host = config.host if host is None else host
+    # Railway may expose an IPv6-style bind value such as [::].
+    # Normalize bracketed/IPv6-any-host values to the portable IPv4 bind address.
+    if host in {"[::]", "::", ""} or host.startswith("[::]:"):
+        host = "0.0.0.0"
     port = config.port if port is None else port
     interval_s = config.tick_interval_s if interval_s is None else interval_s
 
