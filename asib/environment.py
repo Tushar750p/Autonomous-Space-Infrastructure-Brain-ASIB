@@ -14,7 +14,7 @@ class OrbitalEnvironment:
     sunlit_generation_pct: float = 1.8
     eclipse_generation_pct: float = 0.2
     sunlit_cooling_bias_c: float = -0.2
-    eclipse_cooling_bias_c: float = 0.6
+    eclipse_cooling_bias_c: float = 0.1
 
     def advance(self):
         self.phase_deg = (self.phase_deg + self.angular_rate_deg_per_tick) % 360.0
