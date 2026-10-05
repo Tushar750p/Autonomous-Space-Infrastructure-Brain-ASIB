@@ -155,10 +155,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/robustness":
             query = parse_qs(parsed.query)
-            ticks = int(query.get("ticks", ["5"])[0])
-            trials = int(query.get("trials", ["5"])[0])
-            if ticks < 1 or ticks > 100 or trials < 1 or trials > 50:
-                return self.json_response({"error": "ticks must be in [1, 100] and trials in [1, 50]"}, 400)
+            try:
+                ticks = _bounded_query_int(query, "ticks", 5, 1, 100)
+                trials = _bounded_query_int(query, "trials", 5, 1, 50)
+            except ValueError as exc:
+                return self.json_response({"error": str(exc)}, 400)
             return self.json_response(run_robustness_suite(ticks=ticks, trials=trials))
 
         if parsed.path == "/api/tick":
@@ -172,9 +173,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 return self.json_response(self.state())
 
         if parsed.path == "/api/experiments":
-            ticks = int(parse_qs(parsed.query).get("ticks", ["10"])[0])
-            if ticks < 1 or ticks > 500:
-                return self.json_response({"error": "ticks must be in [1, 500]"}, 400)
+            query = parse_qs(parsed.query)
+            try:
+                ticks = _bounded_query_int(query, "ticks", 10, 1, 500)
+            except ValueError as exc:
+                return self.json_response({"error": str(exc)}, 400)
             return self.json_response(run_experiment_suite(ticks))
 
         if parsed.path == "/api/scenario":
@@ -308,6 +311,17 @@ refresh(); setInterval(refresh,1500);
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
         self.wfile.write(body)
+
+
+def _bounded_query_int(query, name: str, default: int, minimum: int, maximum: int):
+    raw = query.get(name, [str(default)])[0]
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise ValueError(f"{name} must be an integer")
+    if value < minimum or value > maximum:
+        raise ValueError(f"{name} must be in [{minimum}, {maximum}]")
+    return value
 
 
 logger = logging.getLogger("asib.dashboard")
