@@ -24,9 +24,18 @@ class ASIBBrain:
         events: list[Event] = []
         for node in world.nodes.values():
             if node.status == NodeStatus.ISOLATED:
-                # Isolation is a deliberate containment state. Preserve it until
-                # an explicit recovery action restores network coordination.
-                continue
+                # Isolation is deliberate containment. A restored network is the
+                # explicit recovery signal that allows normal status evaluation.
+                if not node.network_ok:
+                    continue
+                events.append(Event(
+                    world.tick,
+                    "network_recovery",
+                    node.node_id,
+                    "Network coordination restored; leaving isolated state",
+                    "info",
+                ))
+                node.status = NodeStatus.DEGRADED
             if node.temperature_c >= self.policy.THERMAL_CRITICAL or node.power_pct <= self.policy.POWER_CRITICAL:
                 node.status = NodeStatus.CRITICAL
                 events.append(Event(world.tick, "critical", node.node_id,
