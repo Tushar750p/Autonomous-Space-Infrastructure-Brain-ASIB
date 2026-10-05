@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.3 — 2026-10-05
+
+### Recovery and autonomy
+- Restored isolated-node status automatically when simulated network coordination returns.
+- Added explicit network-recovery event telemetry.
+- Added regression coverage for isolation, recovery and repeated-isolation prevention.
+- Expanded bounded emergency optimizer search and aligned validation coverage.
+
+### Validation
+- GitHub Actions CI passes across Python 3.10, 3.11 and 3.12.
+- Railway deployment checks remain healthy.
+
 ## 0.5.2 — 2026-10-04
 
 ### Added
