@@ -10,7 +10,10 @@ from .planner import Plan
 class ConstrainedPlanOptimizer:
     """Searches a small deterministic neighborhood of plans before live execution."""
 
-    RATIOS = (0.25, 0.50, 0.75, 1.0)
+    # Explore both gentler and stronger bounded mitigation. Stronger variants
+    # are essential during compound thermal/power emergencies, while the
+    # executor still caps each action at the node's available non-critical load.
+    RATIOS = (0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0)
 
     def __init__(self, counterfactual: CounterfactualEvaluator):
         self.counterfactual = counterfactual
