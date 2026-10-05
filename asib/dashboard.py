@@ -231,7 +231,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <button onclick="scenario('robot-failure')">Robot Failure</button>
 </div>
 
-<div id="kpis" class="grid"></div>
+<div id="kpis" class="grid"></div>\n<div id="healthBanner" class="card" style="display:none"></div>
 
 <div class="card"><h3>Orbital Environment</h3><pre id="environment">Loading...</pre></div>
 <div class="card"><h3>Node Telemetry</h3><div id="nodeTable"></div></div>
@@ -283,7 +283,7 @@ async function refresh(){
    rows+='<tr><td>'+esc(id)+'</td><td>'+n.temperature_c+'°C</td><td>'+n.power_pct+'%</td><td>'+n.cpu_load+'%</td><td>'+n.workload+'</td><td>'+ (n.network_ok?'UP':'DOWN') +'</td><td class="status">'+esc(n.status)+'</td></tr>';
  }
  document.getElementById('nodeTable').innerHTML=rows+'</table>';
- document.getElementById('environment').textContent=JSON.stringify(d.environment,null,2);
+ const hb=document.getElementById('healthBanner');\n if(d.health && d.health.needs_human_review){ hb.style.display='block'; hb.innerHTML='<b>⚠️ Human review required</b><br>Decision class: '+esc(d.health.decision_class||'unknown')+'. ASIB is escalating rather than forcing an unsafe autonomous recovery.'; } else { hb.style.display='none'; }\n document.getElementById('environment').textContent=JSON.stringify(d.environment,null,2);
  document.getElementById('risks').textContent=JSON.stringify(d.risks,null,2);
  document.getElementById('knowledge').textContent=JSON.stringify(d.knowledge,null,2);
  document.getElementById('robots').textContent=JSON.stringify(d.robots,null,2);
