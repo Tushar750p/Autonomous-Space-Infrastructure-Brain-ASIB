@@ -1,6 +1,7 @@
 import json
 import threading
 import unittest
+import urllib.error
 import urllib.request
 
 from http.server import ThreadingHTTPServer
@@ -68,6 +69,19 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(robustness["deterministic"])
         self.assertEqual(len(robustness["scenarios"]), 9)
+
+    def test_invalid_query_values_return_400(self):
+        for path, message in (
+            ("/api/robustness?ticks=abc&trials=1", "ticks must be an integer"),
+            ("/api/robustness?ticks=101&trials=1", "ticks must be in [1, 100]"),
+            ("/api/experiments?ticks=0", "ticks must be in [1, 500]"),
+        ):
+            with self.subTest(path=path):
+                with self.assertRaises(urllib.error.HTTPError) as ctx:
+                    self.fetch_json(path)
+                self.assertEqual(ctx.exception.code, 400)
+                body = ctx.exception.read().decode()
+                self.assertIn(message, body)
 
 
 if __name__ == "__main__":
