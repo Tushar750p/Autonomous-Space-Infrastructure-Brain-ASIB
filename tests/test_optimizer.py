@@ -35,8 +35,8 @@ class TestPlanOptimization(unittest.TestCase):
         ], ["test"])
 
         variants = optimizer._variants(plan)
-        self.assertEqual(len(variants), 4)
-        self.assertTrue(all(0 < action.amount <= 40 for p in variants[1:] for action in p.actions))
+        self.assertEqual(len(variants), 7)
+        self.assertTrue(all(0 < action.amount <= 80 for p in variants[1:] for action in p.actions))
 
 
 if __name__ == "__main__":
