@@ -12,6 +12,7 @@
 - GitHub Actions CI passes across Python 3.10, 3.11 and 3.12.
 - Railway deployment configuration remains the production deployment path.
 - Dashboard health now surfaces human-review escalation state.
+- Dashboard experiment and robustness parameters are validated and invalid requests return HTTP 400.
 
 ## 0.5.2 — 2026-10-04
 
