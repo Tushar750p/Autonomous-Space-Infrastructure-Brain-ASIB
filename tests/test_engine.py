@@ -66,6 +66,21 @@ class TestASIBBrain(unittest.TestCase):
         self.assertTrue(any(event.event_type == "plan_repair" for event in events))
         self.assertEqual(sim.world.decision_log[-1]["decision_class"], "repair")
 
+
+    def test_isolated_node_recovers_after_network_restoration(self):
+        sim = Simulator()
+        node = sim.world.nodes["orbital-node-03"]
+        sim.inject_network_failure(node.node_id)
+        brain = ASIBBrain()
+
+        brain.step(sim.world)
+        self.assertEqual(node.status, NodeStatus.ISOLATED)
+
+        node.network_ok = True
+        brain.observe(sim.world)
+
+        self.assertNotEqual(node.status, NodeStatus.ISOLATED)
+
     def test_network_isolation_is_not_repeated(self):
         sim = Simulator()
         sim.inject_network_failure("orbital-node-03")
