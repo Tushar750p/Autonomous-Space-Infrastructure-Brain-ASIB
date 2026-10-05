@@ -137,7 +137,7 @@ class MultiNodePlanner:
                     actions.append(candidate)
                     rationale.append(f"Reduce power load on {source.node_id}")
 
-            if not source.network_ok:
+            if not source.network_ok and source.status.value != "isolated":
                 candidate = Action("isolate", source.node_id,
                                    reason="contain a network-isolated node")
                 if self.policy.allow(world, candidate):
@@ -193,7 +193,7 @@ class MultiNodePlanner:
                         f"Fallback: reduce load by {amount:.1f} on {node.node_id}"
                     )
 
-            if not node.network_ok:
+            if not node.network_ok and node.status.value != "isolated":
                 action = Action(
                     "isolate",
                     node.node_id,
