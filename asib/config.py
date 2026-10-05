@@ -13,7 +13,7 @@ class ASIBConfig:
 
     @classmethod
     def from_env(cls) -> "ASIBConfig":
-        port = int(os.getenv("ASIB_PORT", os.getenv("PORT", "8080"))
+        port = int(os.getenv("PORT", os.getenv("ASIB_PORT", "8080")))
         interval = float(os.getenv("ASIB_TICK_INTERVAL_S", "1.0"))
         return cls(
             host=os.getenv("ASIB_HOST", "0.0.0.0"),
