@@ -33,6 +33,8 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(health["audit_chain"])
         self.assertTrue(health["replay_journal"])
+        self.assertIn("decision_class", health)
+        self.assertIn("needs_human_review", health)
 
         status, calibration = self.fetch_json("/api/calibration")
         self.assertEqual(status, 200)
@@ -64,6 +66,8 @@ class TestDashboardAPI(unittest.TestCase):
         status, state = self.fetch_json("/api/state")
         self.assertEqual(status, 200)
         self.assertEqual(state["environment"]["phase_deg"], 150.0)
+        self.assertIn("health", state)
+        self.assertIn("needs_human_review", state["health"])
 
         status, robustness = self.fetch_json("/api/robustness?ticks=1&trials=1")
         self.assertEqual(status, 200)
