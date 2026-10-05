@@ -38,6 +38,7 @@ class ASIBRuntime:
     def __init__(self, simulator: Simulator | None = None, mission_profile: MissionProfile | None = None):
         self.simulator = simulator or Simulator()
         self.world: World = self.simulator.world
+        self.mission_profile = mission_profile
         self.brain = ASIBBrain(mission_profile)
         self.mission = MissionEvaluator(mission_profile)
         self.predictor = RiskPredictor()
@@ -128,7 +129,7 @@ class ASIBRuntime:
     def reset(self):
         if getattr(self, "store", None) is not None:
             self.store.close()
-        self.__init__(Simulator())
+        self.__init__(Simulator(), mission_profile=self.mission_profile)
 
     def storage_status(self) -> dict:
         if self.store is None:
