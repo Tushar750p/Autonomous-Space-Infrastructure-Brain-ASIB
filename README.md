@@ -85,7 +85,16 @@ asib-checkpoint --scenario compound --ticks 3 --path asib-checkpoint.json
 python -m unittest discover -s tests -v
 ```
 
-### Control room
+### Company-facing demo
+
+The repository includes a self-contained interactive demo for company, partner and investor review.
+
+**Live demo (after GitHub Pages deployment):**  
+`https://tushar750p.github.io/Autonomous-Space-Infrastructure-Brain-ASIB/`
+
+The demo is intentionally simulation-only. It visualizes infrastructure topology, mission health, risk forecasts, autonomous decisions and fault-recovery scenarios without connecting to real spacecraft or physical actuators.
+
+## Control room
 
 ```bash
 python -c "from asib.dashboard import run; run(host='0.0.0.0', port=8080)"
