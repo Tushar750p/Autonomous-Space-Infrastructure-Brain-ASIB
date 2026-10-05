@@ -90,10 +90,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             sim.inject_comms_delay(12.0)
             sim.inject_earth_contact_loss()
         elif name == "robot-failure":
-            runtime.robots.enqueue("orbital-node-01", "inspect-and-service", priority=100)
-            runtime.robots.dispatch()
-            runtime.robots.step()
-            runtime.robots.inject_failure("maintenance-01")
+            rt.robots.enqueue("orbital-node-01", "inspect-and-service", priority=100)
+            rt.robots.dispatch()
+            rt.robots.step()
+            rt.robots.inject_failure("maintenance-01")
         elif name == "compound":
             sim.inject_thermal_failure("orbital-node-01", 96)
             sim.inject_power_failure("orbital-node-02", 20)
