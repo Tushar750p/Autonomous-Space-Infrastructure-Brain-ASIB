@@ -44,6 +44,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "risks": [r.__dict__ for r in RiskPredictor().predict(world)],
             "mission": rt.mission.evaluate(world),
             "memory_entries": len(world.memory),
+            "forecast_calibration": rt.forecasts.summary(),
             "knowledge": rt.knowledge.summary(world),
             "robots": {k: v.__dict__ for k, v in rt.robots.robots.items()},
             "audit": {
