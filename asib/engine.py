@@ -23,6 +23,10 @@ class ASIBBrain:
     def observe(self, world: World) -> list[Event]:
         events: list[Event] = []
         for node in world.nodes.values():
+            if node.status == NodeStatus.ISOLATED:
+                # Isolation is a deliberate containment state. Preserve it until
+                # an explicit recovery action restores network coordination.
+                continue
             if node.temperature_c >= self.policy.THERMAL_CRITICAL or node.power_pct <= self.policy.POWER_CRITICAL:
                 node.status = NodeStatus.CRITICAL
                 events.append(Event(world.tick, "critical", node.node_id,
