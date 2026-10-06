@@ -40,6 +40,11 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("summary", calibration)
 
+        status, decision = self.fetch_json("/api/decision")
+        self.assertEqual(status, 200)
+        self.assertIsNone(decision["latest"])
+        self.assertEqual(decision["recent"], [])
+
         status, replay = self.fetch_json("/api/replay")
         self.assertEqual(status, 200)
         self.assertEqual(replay[0]["tick"], 0)
@@ -68,6 +73,13 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(state["environment"]["phase_deg"], 150.0)
         self.assertIn("health", state)
         self.assertIn("needs_human_review", state["health"])
+        self.assertIn("decision_intelligence", state["last_decision"])
+
+        status, decision = self.fetch_json("/api/decision")
+        self.assertEqual(status, 200)
+        self.assertIn("latest", decision)
+        self.assertIn("decision_intelligence", decision["latest"])
+        self.assertIn("confidence_pct", decision["latest"]["decision_intelligence"])
 
         status, robustness = self.fetch_json("/api/robustness?ticks=1&trials=1")
         self.assertEqual(status, 200)
