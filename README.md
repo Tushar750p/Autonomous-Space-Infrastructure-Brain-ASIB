@@ -191,7 +191,6 @@ asib/
 ├── benchmark.py       # reproducible system benchmark
 ├── scenarios.py       # repeatable fault scenarios
 ├── scenario_cli.py    # scenario command-line interface
-├── robustness_cli.py  # robustness command-line interface
 └── dashboard.py       # autonomous browser control room
 ```
 
