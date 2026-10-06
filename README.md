@@ -89,10 +89,13 @@ python -m unittest discover -s tests -v
 
 The repository includes a self-contained interactive demo for company, partner and investor review.
 
-**Live demo (after GitHub Pages deployment):**  
+**Browser demo (GitHub Pages):**  
 `https://tushar750p.github.io/Autonomous-Space-Infrastructure-Brain-ASIB/`
 
-The demo is intentionally simulation-only. It visualizes infrastructure topology, mission health, risk forecasts, autonomous decisions and fault-recovery scenarios without connecting to real spacecraft or physical actuators.
+**Live autonomous backend / control room (Railway):**  
+`https://asib-mission-control-production.up.railway.app`
+
+The browser demo is intentionally simulation-only. The Railway service runs the Python autonomous runtime and exposes the operational API/control room. It visualizes infrastructure topology, mission health, risk forecasts, autonomous decisions and fault-recovery scenarios without connecting to real spacecraft or physical actuators.
 
 ## Control room
 
