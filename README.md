@@ -65,6 +65,7 @@ Infrastructure Memory
 - 🖥️ Browser control room with continuous autonomous ticks
 - 🤖 Simulated maintenance-robot fleet with failure/reassignment recovery
 - 🧾 Decision traces for every autonomous planning cycle
+- 🧠 Explainable decision intelligence with bounded confidence, evidence and risk level
 - 📊 Reproducible compound benchmark with recovery, score-delta and unsafe-event metrics
 - 🧪 Unit + system tests + GitHub Actions CI
 - 🩺 Service health, metrics, audit, replay, calibration and incident-postmortem API endpoints
@@ -117,6 +118,8 @@ Open `http://localhost:8080`.
 
 Health endpoint: `http://localhost:8080/api/health`
 
+Decision trace endpoint: `http://localhost:8080/api/decision`
+
 Metrics endpoint: `http://localhost:8080/api/metrics`
 
 Audit export: `http://localhost:8080/api/audit`
@@ -164,6 +167,7 @@ asib/
 ├── planner.py         # uncertainty-aware multi-node recovery planning
 ├── optimizer.py       # bounded counterfactual plan optimization
 ├── engine.py          # observe / shadow / execute / verify loop
+├── decision_intelligence.py # explainable decision confidence and risk assessment
 ├── action_executor.py # centralized safe actuation
 ├── counterfactual.py  # future-horizon shadow validation
 ├── distributed.py     # delayed observer-specific infrastructure knowledge
@@ -221,6 +225,8 @@ See [RESEARCH.md](RESEARCH.md) for current positioning and prior-art notes.
 **V5 — Environmental autonomy:** deterministic orbital eclipse/sunlight dynamics, plan-local resource reservations, environment-aware energy margins and maintenance failure recovery ✅
 
 **V5.5 — Research validation:** deterministic robustness trials, configurable mission profiles, forecast calibration and persistent operational journaling ✅
+
+**V5.5+ — Decision intelligence:** explainable decision confidence, evidence trails, risk classification and operator-facing decision telemetry ✅
 
 **V6 — Space integration study:** mission-specific integration research, future hardware qualification and independent verification
 
