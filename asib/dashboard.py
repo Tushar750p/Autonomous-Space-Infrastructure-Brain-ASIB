@@ -117,6 +117,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with self.lock:
                 return self.json_response(self.state())
 
+        if parsed.path == "/api/decision":
+            with self.lock:
+                decision = self.runtime.world.decision_log[-1] if self.runtime.world.decision_log else None
+                return self.json_response({
+                    "latest": decision,
+                    "recent": self.runtime.world.decision_log[-10:],
+                })
+
         if parsed.path == "/api/health":
             with self.lock:
                 return self.json_response(HealthService(self.runtime).snapshot())
@@ -257,6 +265,7 @@ td,th{text-align:left;padding:8px;border-bottom:1px solid #24314b}
 <div class="card"><h3>Persistent Storage</h3><pre id="storage">Loading...</pre></div>
 <div class="card"><h3>World Checkpoint</h3><pre id="checkpoint">Loading...</pre></div>
 <div class="card"><h3>Last Autonomous Decision Trace</h3><pre id="decision">None</pre></div>
+<div class="card"><h3>Decision Intelligence</h3><pre id="decisionIntelligence">Waiting for first decision...</pre></div>
 
 <script>
 async function call(url){
@@ -290,7 +299,8 @@ async function refresh(){
  '<div class="card"><div class="muted">Max knowledge age</div><div class="kpi">'+d.knowledge.max_age_ticks+'t</div></div>'+
  '<div class="card"><div class="muted">Earth contact</div><div class="kpi">'+(d.earth_contact_available?'AVAILABLE':'LOST')+'</div></div>'+
  '<div class="card"><div class="muted">Orbit phase</div><div class="kpi">'+d.environment.phase_deg+'°</div><div class="muted">'+(d.environment.in_eclipse?'ECLIPSE':'SUNLIT')+'</div></div>'+
- '<div class="card"><div class="muted">Forecast samples</div><div class="kpi">'+d.forecast_calibration.completed+'</div></div>';
+ '<div class="card"><div class="muted">Forecast samples</div><div class="kpi">'+d.forecast_calibration.completed+'</div></div>'+
+ '<div class="card"><div class="muted">Decision confidence</div><div class="kpi">'+(d.last_decision?.decision_intelligence?.confidence_pct ?? '—')+'%</div><div class="muted">'+esc(d.last_decision?.decision_intelligence?.risk_level ?? 'no decision')+'</div></div>';
 
  let rows='<table><tr><th>Node</th><th>Temp</th><th>Power</th><th>CPU</th><th>Workload</th><th>Network</th><th>Status</th></tr>';
  for(const [id,n] of Object.entries(d.nodes)){
@@ -306,6 +316,10 @@ async function refresh(){
  document.getElementById('resources').textContent=JSON.stringify(d.resources,null,2);
  document.getElementById('forecastCalibration').textContent=JSON.stringify(d.forecast_calibration,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
+ document.getElementById('decisionIntelligence').textContent=JSON.stringify(
+   d.last_decision?.decision_intelligence ?? {status:'No autonomous decision yet'},
+   null,2
+ );
  if(refreshCycle % 5 === 0){
    const [pm, storage, checkpoint] = await Promise.all([
      fetch('/api/postmortem',{cache:'no-store'}).then(r=>r.json()),
