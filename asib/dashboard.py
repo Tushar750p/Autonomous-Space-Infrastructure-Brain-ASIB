@@ -22,6 +22,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
     runtime = ASIBRuntime()
     lock = threading.Lock()
 
+    def log_message(self, format, *args):
+        # Route HTTP access logs through ASIB logging so successful requests do
+        # not appear as error-level container logs on platforms such as Railway.
+        logger.info("%s - %s", self.address_string(), format % args)
+
     def json_response(self, payload, status=200):
         body = json.dumps(payload, indent=2, default=str).encode()
         self.send_response(status)
@@ -268,7 +273,13 @@ async function runRobustness(){
   document.getElementById('experiments').textContent=JSON.stringify(d,null,2);
 }
 function esc(x){return String(x).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+let refreshInFlight=false;
+let refreshCycle=0;
+
 async function refresh(){
+ if(refreshInFlight) return;
+ refreshInFlight=true;
+ try {
  const d=await (await fetch('/api/state',{cache:'no-store'})).json();
  document.getElementById('kpis').innerHTML =
  '<div class="card"><div class="muted">Autonomy mode</div><div class="kpi">'+esc(d.autonomy_mode)+'</div></div>'+
@@ -295,14 +306,22 @@ async function refresh(){
  document.getElementById('resources').textContent=JSON.stringify(d.resources,null,2);
  document.getElementById('forecastCalibration').textContent=JSON.stringify(d.forecast_calibration,null,2);
  document.getElementById('decision').textContent=JSON.stringify(d.last_decision,null,2);
- const pm=await (await fetch('/api/postmortem',{cache:'no-store'})).json();
- document.getElementById('postmortem').textContent=JSON.stringify(pm,null,2);
- const storage=await (await fetch('/api/storage',{cache:'no-store'})).json();
- document.getElementById('storage').textContent=JSON.stringify(storage,null,2);
- const checkpoint=await (await fetch('/api/checkpoint',{cache:'no-store'})).json();
- document.getElementById('checkpoint').textContent=JSON.stringify({format_version:checkpoint.format_version,tick:checkpoint.tick,nodes:Object.keys(checkpoint.nodes).length,audit_entries:checkpoint.audit_ledger.length},null,2);
+ if(refreshCycle % 5 === 0){
+   const [pm, storage, checkpoint] = await Promise.all([
+     fetch('/api/postmortem',{cache:'no-store'}).then(r=>r.json()),
+     fetch('/api/storage',{cache:'no-store'}).then(r=>r.json()),
+     fetch('/api/checkpoint',{cache:'no-store'}).then(r=>r.json())
+   ]);
+   document.getElementById('postmortem').textContent=JSON.stringify(pm,null,2);
+   document.getElementById('storage').textContent=JSON.stringify(storage,null,2);
+   document.getElementById('checkpoint').textContent=JSON.stringify({format_version:checkpoint.format_version,tick:checkpoint.tick,nodes:Object.keys(checkpoint.nodes).length,audit_entries:checkpoint.audit_ledger.length},null,2);
+ }
+ refreshCycle += 1;
+ } finally {
+   refreshInFlight=false;
+ }
 }
-refresh(); setInterval(refresh,1500);
+refresh(); setInterval(refresh,2000);
 </script>
 </main></body></html>"""
 
