@@ -1,5 +1,6 @@
 from .action_executor import ActionExecutor
 from .counterfactual import CounterfactualEvaluator
+from .decision_intelligence import DecisionIntelligence
 from .mission import MissionEvaluator, MissionProfile
 from .models import Action, AutonomyMode, Event, NodeStatus, World
 from .optimizer import ConstrainedPlanOptimizer
@@ -186,6 +187,22 @@ class ASIBBrain:
             + verified
         )
         world.memory.extend(history)
+
+        decision_class = (
+            "escalate" if needs_human_review
+            else "repair" if repair_event
+            else "act" if plan.actions
+            else "hold"
+        )
+        invariant_safe = self.validator.validate(world).safe
+        decision_quality = DecisionIntelligence.assess(
+            actions=plan.actions,
+            shadow=shadow,
+            invariant_safe=invariant_safe,
+            decision_class=decision_class,
+            needs_human_review=needs_human_review,
+        )
+
         decision = {
             "trace_id": trace_id,
             "tick": world.tick,
@@ -194,17 +211,13 @@ class ASIBBrain:
             "actions": [action.__dict__ for action in plan.actions],
             "executed": [event.message for event in execution_events],
             "verified": [event.message for event in verified],
-            "invariants_safe": self.validator.validate(world).safe,
+            "invariants_safe": invariant_safe,
             "shadow": shadow.as_dict(),
             "optimization": optimization,
-            "decision_class": (
-                "escalate" if needs_human_review
-                else "repair" if repair_event
-                else "act" if plan.actions
-                else "hold"
-            ),
+            "decision_class": decision_class,
             "plan_source": "fallback" if repair_event else "primary",
             "needs_human_review": needs_human_review,
+            "decision_intelligence": decision_quality.as_dict(),
         }
         world.decision_log.append(decision)
         world.audit_ledger.append(decision)
