@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — 2026-10-06
+
+### Decision intelligence
+- Added an explainable decision-assessment layer for every autonomous cycle.
+- Decision traces now include bounded confidence, risk level, knowledge-state confidence, shadow score delta, future-safety evidence and invariant evidence.
+- Added `/api/decision` for latest/recent decision traces.
+- Control room now surfaces decision confidence and risk level alongside mission health.
+- Added regression coverage for safe decisions and human-review escalation.
+
 ## 0.5.3 — 2026-10-05
 
 ### Recovery and autonomy
