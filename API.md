@@ -4,7 +4,8 @@ The local control room exposes JSON endpoints for simulation inspection. These e
 
 | Endpoint | Purpose |
 | --- | --- |
-| `/api/state` | Full current simulation state, risks, mission metrics, resources, audit and replay status |
+| `/api/state` | Full current simulation state, risks, mission metrics, resources, audit, replay and latest decision intelligence |
+| `/api/decision` | Latest and recent autonomous decision traces with explainable confidence, evidence and risk level |
 | `/api/tick` | Advance one deterministic simulation tick |
 | `/api/reset` | Reset the testbed to its initial deterministic state |
 | `/api/health` | Consolidated safety, audit, replay and service-health snapshot |
