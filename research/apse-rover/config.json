@@ -1,0 +1,9 @@
+{
+  "size": 20,
+  "max_energy": 160,
+  "return_reserve": 8,
+  "seed": 17,
+  "obstacle_probability": 0.13,
+  "target_probability": 0.10,
+  "note": "These settings describe a synthetic grid world, not lunar physics."
+}
